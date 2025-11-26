@@ -20,7 +20,7 @@ struct BrowserView: View {
     var body: some View {
         ZStack {
             WebViewWrapper(url: url, canGoBack: $canGoBack, title: $title, webViewStore: webViewStore)
-                .ignoresSafeArea()
+                .ignoresSafeArea(edges: .bottom)
 
             VStack {
                 Spacer()
