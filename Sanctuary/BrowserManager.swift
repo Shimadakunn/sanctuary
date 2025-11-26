@@ -5,7 +5,7 @@
 //  Created by Léo Combaret on 26/11/2025.
 //
 
-import SwiftUI
+internal import SwiftUI
 import Combine
 
 enum BrowserState {
@@ -21,6 +21,7 @@ class BrowserManager: ObservableObject {
     @Published var currentTitle: String = "Sanctuary"
 
     let webViewStore = WebViewStore()
+    let favoritesManager = FavoritesManager()
 
     func navigateToURL(_ urlString: String) {
         print("🌐 [BrowserManager] navigateToURL called with: \(urlString)")

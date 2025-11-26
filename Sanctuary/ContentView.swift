@@ -5,7 +5,7 @@
 //  Created by Léo Combaret on 26/11/2025.
 //
 
-import SwiftUI
+internal import SwiftUI
 
 struct ContentView: View {
     @StateObject private var browserManager = BrowserManager()
@@ -21,7 +21,8 @@ struct ContentView: View {
                     },
                     onQuickAccess: { domain in
                         browserManager.openQuickAccess(domain)
-                    }
+                    },
+                    favoritesManager: browserManager.favoritesManager
                 )
 
             case .browsing:
@@ -35,7 +36,8 @@ struct ContentView: View {
                     onGoHome: {
                         browserManager.goBackToHome()
                     },
-                    webViewStore: browserManager.webViewStore
+                    webViewStore: browserManager.webViewStore,
+                    favoritesManager: browserManager.favoritesManager
                 )
             }
         }

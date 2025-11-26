@@ -5,7 +5,7 @@
 //  Created by Léo Combaret on 26/11/2025.
 //
 
-import SwiftUI
+internal import SwiftUI
 import WebKit
 import Combine
 
@@ -16,6 +16,9 @@ struct BrowserView: View {
     let onBack: () -> Void
     let onGoHome: () -> Void
     let webViewStore: WebViewStore
+    @ObservedObject var favoritesManager: FavoritesManager
+
+    @State private var showAddFavoriteSheet = false
 
     var body: some View {
         ZStack {
@@ -49,6 +52,33 @@ struct BrowserView: View {
                     .padding(.leading, 20)
 
                     Spacer()
+
+                    Button(action: {
+                        let currentURL = webViewStore.webView?.url?.absoluteString ?? ""
+                        if favoritesManager.isFavorite(url: currentURL) {
+                            favoritesManager.removeFavorite(url: currentURL)
+                        } else {
+                            showAddFavoriteSheet = true
+                        }
+                    }) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.black.opacity(0.7))
+                                .frame(width: 50, height: 50)
+
+                            Image(systemName: favoritesManager.isFavorite(url: webViewStore.webView?.url?.absoluteString) ? "heart.fill" : "heart")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundColor(favoritesManager.isFavorite(url: webViewStore.webView?.url?.absoluteString) ? .red : .white)
+                        }
+                    }
+                    .sheet(isPresented: $showAddFavoriteSheet) {
+                        AddFavoriteView(
+                            initialTitle: title,
+                            url: webViewStore.webView?.url?.absoluteString ?? "",
+                            favoritesManager: favoritesManager,
+                            isPresented: $showAddFavoriteSheet
+                        )
+                    }
 
                     Button(action: {
                         print("🏠 [Home Button Pressed]")
@@ -175,6 +205,168 @@ struct WebViewWrapper: UIViewRepresentable {
 
         func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
             print("❌ [Navigation Provisional Fail] Error: \(error.localizedDescription)")
+        }
+    }
+}
+
+struct AddFavoriteView: View {
+    @State var initialTitle: String
+    @State var initialURL: String
+    @ObservedObject var favoritesManager: FavoritesManager
+    @Binding var isPresented: Bool
+    @Environment(\.dismiss) private var dismiss
+    @State private var dominantColor: Color = Color.gray.opacity(0.15)
+
+    init(initialTitle: String, url: String, favoritesManager: FavoritesManager, isPresented: Binding<Bool>) {
+        _initialTitle = State(initialValue: initialTitle)
+        _initialURL = State(initialValue: url)
+        self.favoritesManager = favoritesManager
+        _isPresented = isPresented
+    }
+
+    private var faviconURL: String {
+        guard let urlObj = URL(string: initialURL),
+              let host = urlObj.host else {
+            return ""
+        }
+        return "https://www.google.com/s2/favicons?domain=\(host)&sz=64"
+    }
+
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 0) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(dominantColor)
+                        .frame(width: 80, height: 80)
+
+                    AsyncImage(url: URL(string: faviconURL)) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 48, height: 48)
+                                .onAppear {
+                                    extractColor(from: image)
+                                }
+                        default:
+                            Image(systemName: "globe")
+                                .font(.system(size: 36))
+                                .foregroundColor(.blue)
+                        }
+                    }
+                }
+                .frame(maxHeight: .infinity)
+                .frame(height: 200)
+
+                VStack(spacing: 15) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Title")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.secondary)
+                        HStack {
+                            TextField("Title", text: $initialTitle)
+                                .font(.system(size: 16))
+
+                            if !initialTitle.isEmpty {
+                                Button(action: {
+                                    initialTitle = ""
+                                }) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundColor(.secondary)
+                                        .font(.system(size: 18))
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        )
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("URL")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.secondary)
+                        HStack {
+                            TextField("URL", text: $initialURL)
+                                .font(.system(size: 16))
+                                .autocapitalization(.none)
+                                .keyboardType(.URL)
+
+                            if !initialURL.isEmpty {
+                                Button(action: {
+                                    initialURL = ""
+                                }) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundColor(.secondary)
+                                        .font(.system(size: 18))
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        )
+                    }
+                }
+                .padding(.horizontal, 20)
+
+                Spacer()
+
+                Button(action: {
+                    favoritesManager.addFavorite(title: initialTitle, url: initialURL)
+                    dismiss()
+                }) {
+                    Text("Save")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.blue)
+                        .cornerRadius(12)
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 30)
+            }
+            .navigationTitle("Add Favorite")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+
+    private func extractColor(from image: Image) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            if let url = URL(string: faviconURL),
+               let data = try? Data(contentsOf: url),
+               let uiImage = UIImage(data: data),
+               let significantColor = uiImage.dominantColor() {
+                DispatchQueue.main.async {
+                    var r: CGFloat = 0
+                    var g: CGFloat = 0
+                    var b: CGFloat = 0
+                    var a: CGFloat = 0
+
+                    significantColor.getRed(&r, green: &g, blue: &b, alpha: &a)
+
+                    let pastelR = r + (1.0 - r) * 0.7
+                    let pastelG = g + (1.0 - g) * 0.7
+                    let pastelB = b + (1.0 - b) * 0.7
+
+                    dominantColor = Color(red: pastelR, green: pastelG, blue: pastelB)
+                }
+            }
         }
     }
 }

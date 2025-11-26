@@ -5,7 +5,7 @@
 //  Created by Léo Combaret on 26/11/2025.
 //
 
-import SwiftUI
+internal import SwiftUI
 import WebKit
 
 struct WebViewContainer: UIViewRepresentable {

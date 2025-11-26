@@ -6,7 +6,7 @@
 //
 
 import UIKit
-import SwiftUI
+internal import SwiftUI
 import Combine
 
 class OrientationManager: ObservableObject {
