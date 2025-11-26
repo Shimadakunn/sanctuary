@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AVFoundation
 
 @main
 struct SanctuaryApp: App {
@@ -19,6 +20,18 @@ struct SanctuaryApp: App {
 }
 
 class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+        // Configure audio session for Picture-in-Picture and background playback
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback, options: [])
+            try AVAudioSession.sharedInstance().setActive(true)
+            print("✅ [Audio Session] Configured for PiP and background playback")
+        } catch {
+            print("❌ [Audio Session] Failed to configure: \(error.localizedDescription)")
+        }
+        return true
+    }
+
     func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
         guard let window = window else {
             print("🔄 [Orientation] Window is nil - returning .portrait")

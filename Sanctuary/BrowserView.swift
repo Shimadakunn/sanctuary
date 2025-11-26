@@ -85,12 +85,23 @@ struct WebViewWrapper: UIViewRepresentable {
     func makeUIView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
         configuration.allowsInlineMediaPlayback = true
+        configuration.allowsPictureInPictureMediaPlayback = true
         configuration.mediaTypesRequiringUserActionForPlayback = []
+
+        // Enable modern media features
+        let preferences = WKWebpagePreferences()
+        preferences.allowsContentJavaScript = true
+        configuration.defaultWebpagePreferences = preferences
 
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator
         webView.allowsBackForwardNavigationGestures = false
         webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+
+        // Ensure configuration is set
+        if #available(iOS 14.0, *) {
+            webView.configuration.preferences.isElementFullscreenEnabled = true
+        }
 
         DispatchQueue.main.async {
             webViewStore.webView = webView
