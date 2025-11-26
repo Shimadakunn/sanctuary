@@ -22,6 +22,7 @@ class BrowserManager: ObservableObject {
 
     let webViewStore = WebViewStore()
     let favoritesManager = FavoritesManager()
+    let historyManager = HistoryManager()
 
     func navigateToURL(_ urlString: String) {
         print("🌐 [BrowserManager] navigateToURL called with: \(urlString)")

@@ -22,7 +22,8 @@ struct ContentView: View {
                     onQuickAccess: { domain in
                         browserManager.openQuickAccess(domain)
                     },
-                    favoritesManager: browserManager.favoritesManager
+                    favoritesManager: browserManager.favoritesManager,
+                    historyManager: browserManager.historyManager
                 )
 
             case .browsing:
@@ -37,7 +38,8 @@ struct ContentView: View {
                         browserManager.goBackToHome()
                     },
                     webViewStore: browserManager.webViewStore,
-                    favoritesManager: browserManager.favoritesManager
+                    favoritesManager: browserManager.favoritesManager,
+                    historyManager: browserManager.historyManager
                 )
             }
         }

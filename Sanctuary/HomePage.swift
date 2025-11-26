@@ -67,52 +67,70 @@ struct HomePage: View {
     let onSubmit: () -> Void
     let onQuickAccess: (String) -> Void
     @ObservedObject var favoritesManager: FavoritesManager
+    @ObservedObject var historyManager: HistoryManager
 
     @State private var showManageView = false
+    @State private var showHistoryView = false
 
     var body: some View {
-        ZStack {
-            Color(UIColor.systemGroupedBackground)
-                .ignoresSafeArea()
+        NavigationStack {
+            ZStack {
+                Color(UIColor.systemGroupedBackground)
+                    .ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                HStack {
+                VStack(spacing: 0) {
                     Spacer()
-                    Button(action: {
-                        showManageView = true
-                    }) {
-                        Image(systemName: "pencil.circle.fill")
-                            .font(.system(size: 28))
-                            .foregroundColor(.blue)
-                    }
-                    .padding(.trailing, 20)
-                    .padding(.top, 10)
-                }
 
-                Spacer()
-
-                ScrollView {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 20) {
-                        ForEach(favoritesManager.favorites) { favorite in
-                            FavoriteTile(
-                                title: favorite.title,
-                                url: favorite.url,
-                                faviconURL: favorite.faviconURL
-                            ) {
-                                onQuickAccess(favorite.url)
+                    ScrollView {
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 20) {
+                            ForEach(favoritesManager.favorites) { favorite in
+                                FavoriteTile(
+                                    title: favorite.title,
+                                    url: favorite.url,
+                                    faviconURL: favorite.faviconURL
+                                ) {
+                                    onQuickAccess(favorite.url)
+                                }
                             }
+                        }
+                        .padding(.horizontal)
+                        .padding(.top, 20)
+                    }
+
+                    // Action Buttons
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 20) {
+                        ActionButton(icon: "heart.fill", title: "Favorites") {
+                            showManageView = true
+                        }
+
+                        ActionButton(icon: "clock.fill", title: "History") {
+                            showHistoryView = true
+                        }
+
+                        ActionButton(icon: "folder.fill", title: "Files") {
+                            // To be implemented
+                        }
+
+                        ActionButton(icon: "gearshape.fill", title: "Settings") {
+                            // To be implemented
                         }
                     }
                     .padding(.horizontal)
-                    .padding(.top, 20)
-                }
+                    .padding(.vertical, 20)
 
-                SearchBar(text: $searchText, onSubmit: onSubmit)
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 40)
-            }
-            .sheet(isPresented: $showManageView) {
-                ManageFavoritesView(favoritesManager: favoritesManager, isPresented: $showManageView)
+                    SearchBar(text: $searchText, onSubmit: onSubmit)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 40)
+                }
+                .navigationDestination(isPresented: $showManageView) {
+                    ManageFavoritesView(favoritesManager: favoritesManager, isPresented: $showManageView)
+                }
+                .navigationDestination(isPresented: $showHistoryView) {
+                    HistoryView(historyManager: historyManager) { url in
+                        showHistoryView = false
+                        onQuickAccess(url)
+                    }
+                }
             }
         }
     }
@@ -200,71 +218,108 @@ struct ManageFavoritesView: View {
     @State private var editingFavorite: FavoriteWebsite? = nil
 
     var body: some View {
-        NavigationView {
-            List {
-                ForEach(favoritesManager.favorites) { favorite in
-                    HStack(spacing: 12) {
-                        AsyncImage(url: URL(string: favorite.faviconURL)) { phase in
-                            switch phase {
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 32, height: 32)
-                            default:
-                                Image(systemName: "globe")
-                                    .font(.system(size: 24))
-                                    .foregroundColor(.blue)
-                                    .frame(width: 32, height: 32)
-                            }
-                        }
-
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(favorite.title)
-                                .font(.system(size: 16, weight: .medium))
-                            Text(favorite.url)
-                                .font(.system(size: 12))
-                                .foregroundColor(.secondary)
-                                .lineLimit(1)
-                        }
-
-                        Spacer()
-
-                        Button(action: {
-                            editingFavorite = favorite
-                        }) {
-                            Image(systemName: "pencil.circle.fill")
-                                .foregroundColor(.blue)
-                                .font(.system(size: 24))
-                        }
-                        .buttonStyle(BorderlessButtonStyle())
-                    }
-                }
-                .onMove { source, destination in
-                    favoritesManager.moveFavorite(from: source, to: destination)
-                }
-                .onDelete { indexSet in
-                    indexSet.forEach { index in
-                        let favorite = favoritesManager.favorites[index]
-                        favoritesManager.removeFavoriteById(id: favorite.id)
-                    }
-                }
-            }
-            .environment(\.editMode, .constant(.active))
-            .navigationTitle("Manage Favorites")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        isPresented = false
-                    }
-                }
-            }
-            .sheet(item: $editingFavorite) { favorite in
-                EditFavoriteDetailView(
+        List {
+            ForEach(favoritesManager.favorites) { favorite in
+                FavoriteListRow(
                     favorite: favorite,
-                    favoritesManager: favoritesManager
+                    onEdit: {
+                        editingFavorite = favorite
+                    }
                 )
+            }
+            .onMove { source, destination in
+                favoritesManager.moveFavorite(from: source, to: destination)
+            }
+            .onDelete { indexSet in
+                indexSet.forEach { index in
+                    let favorite = favoritesManager.favorites[index]
+                    favoritesManager.removeFavoriteById(id: favorite.id)
+                }
+            }
+        }
+        .environment(\.editMode, .constant(.active))
+        .navigationTitle("Favorites")
+        .navigationBarTitleDisplayMode(.inline)
+        .sheet(item: $editingFavorite) { favorite in
+            EditFavoriteDetailView(
+                favorite: favorite,
+                favoritesManager: favoritesManager
+            )
+        }
+    }
+}
+
+struct FavoriteListRow: View {
+    let favorite: FavoriteWebsite
+    let onEdit: () -> Void
+    @State private var dominantColor: Color = Color.gray.opacity(0.15)
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(dominantColor)
+                    .frame(width: 48, height: 48)
+
+                AsyncImage(url: URL(string: favorite.faviconURL)) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 28, height: 28)
+                            .onAppear {
+                                extractColor(from: image)
+                            }
+                    default:
+                        Image(systemName: "globe")
+                            .font(.system(size: 20))
+                            .foregroundColor(.blue)
+                    }
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(favorite.title)
+                    .font(.system(size: 16, weight: .medium))
+                Text(favorite.url)
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+            }
+
+            Spacer()
+
+            Button(action: onEdit) {
+                Image(systemName: "pencil.circle.fill")
+                    .foregroundColor(.blue)
+                    .font(.system(size: 24))
+            }
+            .buttonStyle(BorderlessButtonStyle())
+        }
+    }
+
+    private func extractColor(from image: Image) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            if let url = URL(string: favorite.faviconURL),
+               let data = try? Data(contentsOf: url),
+               let uiImage = UIImage(data: data),
+               let significantColor = uiImage.dominantColor() {
+                DispatchQueue.main.async {
+                    var r: CGFloat = 0
+                    var g: CGFloat = 0
+                    var b: CGFloat = 0
+                    var a: CGFloat = 0
+
+                    significantColor.getRed(&r, green: &g, blue: &b, alpha: &a)
+
+                    // Blend with white for a pastel effect
+                    let pastelR = r + (1.0 - r) * 0.7
+                    let pastelG = g + (1.0 - g) * 0.7
+                    let pastelB = b + (1.0 - b) * 0.7
+
+                    dominantColor = Color(red: pastelR, green: pastelG, blue: pastelB)
+                }
             }
         }
     }
@@ -485,5 +540,187 @@ struct SearchBar: View {
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color(UIColor.secondarySystemGroupedBackground))
         )
+    }
+}
+
+struct ActionButton: View {
+    let icon: String
+    let title: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.gray.opacity(0.4), lineWidth: 2)
+                        .frame(width: 60, height: 60)
+
+                    Image(systemName: icon)
+                        .font(.system(size: 24))
+                        .foregroundColor(.gray)
+                }
+
+                Text(title)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+struct HistoryView: View {
+    @ObservedObject var historyManager: HistoryManager
+    let onVisit: (String) -> Void
+
+    var body: some View {
+        List {
+            let grouped = historyManager.groupedHistory()
+
+            if grouped.isEmpty {
+                VStack(spacing: 16) {
+                    Image(systemName: "clock")
+                        .font(.system(size: 64))
+                        .foregroundColor(.gray.opacity(0.5))
+                    Text("No History Yet")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundColor(.secondary)
+                    Text("Sites you visit will appear here")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.top, 100)
+                .listRowBackground(Color.clear)
+            } else {
+                ForEach(grouped, id: \.0) { section in
+                    Section(header: Text(section.0)) {
+                        ForEach(section.1) { item in
+                            HistoryRow(item: item) {
+                                onVisit(item.url)
+                            }
+                        }
+                        .onDelete { indexSet in
+                            indexSet.forEach { index in
+                                let item = section.1[index]
+                                historyManager.removeHistoryItem(id: item.id)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .navigationTitle("History")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if !historyManager.history.isEmpty {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Clear") {
+                        historyManager.clearHistory()
+                    }
+                    .foregroundColor(.red)
+                }
+            }
+        }
+    }
+}
+
+struct HistoryRow: View {
+    let item: HistoryItem
+    let onTap: () -> Void
+    @State private var dominantColor: Color = Color.gray.opacity(0.15)
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(dominantColor)
+                        .frame(width: 48, height: 48)
+
+                    AsyncImage(url: URL(string: item.faviconURL)) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 28, height: 28)
+                                .onAppear {
+                                    extractColor(from: image)
+                                }
+                        default:
+                            Image(systemName: "globe")
+                                .font(.system(size: 20))
+                                .foregroundColor(.blue)
+                        }
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(item.title)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                    Text(item.url)
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+
+                Spacer()
+
+                Text(timeAgo(from: item.visitDate))
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+
+    private func extractColor(from image: Image) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            if let url = URL(string: item.faviconURL),
+               let data = try? Data(contentsOf: url),
+               let uiImage = UIImage(data: data),
+               let significantColor = uiImage.dominantColor() {
+                DispatchQueue.main.async {
+                    var r: CGFloat = 0
+                    var g: CGFloat = 0
+                    var b: CGFloat = 0
+                    var a: CGFloat = 0
+
+                    significantColor.getRed(&r, green: &g, blue: &b, alpha: &a)
+
+                    let pastelR = r + (1.0 - r) * 0.7
+                    let pastelG = g + (1.0 - g) * 0.7
+                    let pastelB = b + (1.0 - b) * 0.7
+
+                    dominantColor = Color(red: pastelR, green: pastelG, blue: pastelB)
+                }
+            }
+        }
+    }
+
+    private func timeAgo(from date: Date) -> String {
+        let interval = Date().timeIntervalSince(date)
+        let minutes = Int(interval / 60)
+        let hours = Int(interval / 3600)
+        let days = Int(interval / 86400)
+
+        if minutes < 1 {
+            return "Just now"
+        } else if minutes < 60 {
+            return "\(minutes)m"
+        } else if hours < 24 {
+            return "\(hours)h"
+        } else if days < 7 {
+            return "\(days)d"
+        } else {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "MMM d"
+            return formatter.string(from: date)
+        }
     }
 }

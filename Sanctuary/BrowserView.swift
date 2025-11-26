@@ -17,12 +17,13 @@ struct BrowserView: View {
     let onGoHome: () -> Void
     let webViewStore: WebViewStore
     @ObservedObject var favoritesManager: FavoritesManager
+    @ObservedObject var historyManager: HistoryManager
 
     @State private var showAddFavoriteSheet = false
 
     var body: some View {
         ZStack {
-            WebViewWrapper(url: url, canGoBack: $canGoBack, title: $title, webViewStore: webViewStore)
+            WebViewWrapper(url: url, canGoBack: $canGoBack, title: $title, webViewStore: webViewStore, historyManager: historyManager)
                 .ignoresSafeArea(edges: .bottom)
 
             VStack {
@@ -111,6 +112,7 @@ struct WebViewWrapper: UIViewRepresentable {
     @Binding var canGoBack: Bool
     @Binding var title: String
     @ObservedObject var webViewStore: WebViewStore
+    @ObservedObject var historyManager: HistoryManager
 
     func makeUIView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
@@ -151,10 +153,23 @@ struct WebViewWrapper: UIViewRepresentable {
         func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
             print("🔍 [Navigation Policy] Type: \(navigationAction.navigationType.rawValue), URL: \(navigationAction.request.url?.absoluteString ?? "nil"), SourceFrame: \(navigationAction.sourceFrame.request.url?.absoluteString ?? "nil")")
 
+            // Always allow about:blank (used by many sites for internal operations)
+            if let targetURL = navigationAction.request.url,
+               targetURL.absoluteString == "about:blank" {
+                decisionHandler(.allow)
+                return
+            }
+
             // Block "other" type navigation that appears to be going backwards
             if navigationAction.navigationType == .other {
                 if let sourceURL = navigationAction.sourceFrame.request.url,
                    let targetURL = navigationAction.request.url {
+
+                    // Allow same-page navigation (anchors, hash changes)
+                    if sourceURL.absoluteString == targetURL.absoluteString {
+                        decisionHandler(.allow)
+                        return
+                    }
 
                     // Block cross-origin backwards navigation (e.g., site redirecting back to Google)
                     if sourceURL.host != targetURL.host,
@@ -191,11 +206,25 @@ struct WebViewWrapper: UIViewRepresentable {
             parent.canGoBack = webView.canGoBack
             parent.title = webView.title ?? webView.url?.host ?? "Sanctuary"
             currentURL = webView.url
+
+            // Add to history
+            if let url = webView.url?.absoluteString,
+               let title = webView.title ?? webView.url?.host {
+                parent.historyManager.addHistoryItem(title: title, url: url)
+            }
+
             print("✅ [Navigation Finish] URL: \(webView.url?.absoluteString ?? "nil"), CanGoBack: \(webView.canGoBack)")
         }
 
         func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
             parent.canGoBack = webView.canGoBack
+
+            // Also track in didCommit to catch client-side navigation (like YouTube videos)
+            if let url = webView.url?.absoluteString,
+               let title = webView.title ?? webView.url?.host {
+                parent.historyManager.addHistoryItem(title: title, url: url)
+            }
+
             print("📝 [Navigation Commit] URL: \(webView.url?.absoluteString ?? "nil"), CanGoBack: \(webView.canGoBack)")
         }
 
