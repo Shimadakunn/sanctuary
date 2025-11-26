@@ -25,38 +25,17 @@ struct ContentView: View {
                 )
 
             case .browsing:
-                if let currentTab = browserManager.currentTab {
-                    BrowserView(
-                        url: currentTab.url,
-                        canGoBack: $browserManager.canGoBack,
-                        title: $browserManager.currentTitle,
-                        onBack: {
-                            browserManager.goBackToHome()
-                        },
-                        onShowTabs: {
-                            browserManager.showTabs()
-                        },
-                        webViewStore: browserManager.webViewStore
-                    )
-                }
-
-            case .tabs:
-                TabsView(
-                    tabs: $browserManager.tabs,
-                    selectedTabIndex: $browserManager.selectedTabIndex,
-                    searchText: $browserManager.searchText,
-                    onSelectTab: { index in
-                        browserManager.selectTab(index)
+                BrowserView(
+                    url: browserManager.currentURL,
+                    canGoBack: $browserManager.canGoBack,
+                    title: $browserManager.currentTitle,
+                    onBack: {
+                        browserManager.goBackToHome()
                     },
-                    onNewTab: {
-                        browserManager.createNewTab()
+                    onGoHome: {
+                        browserManager.goBackToHome()
                     },
-                    onCloseTab: { index in
-                        browserManager.closeTab(index)
-                    },
-                    onSubmit: {
-                        browserManager.handleSearch()
-                    }
+                    webViewStore: browserManager.webViewStore
                 )
             }
         }

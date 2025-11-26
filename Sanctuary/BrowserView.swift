@@ -14,7 +14,7 @@ struct BrowserView: View {
     @Binding var canGoBack: Bool
     @Binding var title: String
     let onBack: () -> Void
-    let onShowTabs: () -> Void
+    let onGoHome: () -> Void
     let webViewStore: WebViewStore
 
     var body: some View {
@@ -51,15 +51,15 @@ struct BrowserView: View {
                     Spacer()
 
                     Button(action: {
-                        print("📑 [Tabs Button Pressed]")
-                        onShowTabs()
+                        print("🏠 [Home Button Pressed]")
+                        onGoHome()
                     }) {
                         ZStack {
                             Circle()
                                 .fill(Color.black.opacity(0.7))
                                 .frame(width: 50, height: 50)
 
-                            Image(systemName: "square.on.square")
+                            Image(systemName: "house.fill")
                                 .font(.system(size: 20, weight: .semibold))
                                 .foregroundColor(.white)
                         }
