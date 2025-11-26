@@ -125,7 +125,16 @@ struct WebViewWrapper: UIViewRepresentable {
             if navigationAction.navigationType == .other {
                 if let sourceURL = navigationAction.sourceFrame.request.url,
                    let targetURL = navigationAction.request.url {
-                    // Check if this is a suspicious backwards navigation
+
+                    // Block cross-origin backwards navigation (e.g., site redirecting back to Google)
+                    if sourceURL.host != targetURL.host,
+                       webView.backForwardList.backList.contains(where: { $0.url == targetURL }) {
+                        print("🚫 [Navigation Blocked] Cross-origin backwards redirect from \(sourceURL.host ?? "unknown") to \(targetURL.host ?? "unknown")")
+                        decisionHandler(.cancel)
+                        return
+                    }
+
+                    // Check if this is a suspicious same-host backwards navigation
                     // (navigating to a simpler/parent URL from a more complex one)
                     let sourcePathComponents = sourceURL.pathComponents
                     let targetPathComponents = targetURL.pathComponents
