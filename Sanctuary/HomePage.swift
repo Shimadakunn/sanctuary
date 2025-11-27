@@ -81,9 +81,11 @@ struct HomePage: View {
                 VStack(spacing: 0) {
                     Spacer()
 
-                    ScrollView {
+                    // Favorites Grid
+                    HStack {
+                        Spacer()
                         LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 20) {
-                            ForEach(favoritesManager.favorites) { favorite in
+                            ForEach(Array(favoritesManager.favorites.prefix(8))) { favorite in
                                 FavoriteTile(
                                     title: favorite.title,
                                     url: favorite.url,
@@ -93,9 +95,11 @@ struct HomePage: View {
                                 }
                             }
                         }
-                        .padding(.horizontal)
-                        .padding(.top, 20)
+                        .frame(maxWidth: 400)
+                        Spacer()
                     }
+                    .padding(.horizontal)
+                    .padding(.bottom, 4)
 
                     // Action Buttons
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 20) {
@@ -214,32 +218,42 @@ struct FavoriteTile: View {
 struct ManageFavoritesView: View {
     @ObservedObject var favoritesManager: FavoritesManager
     @Binding var isPresented: Bool
-    @Environment(\.editMode) private var editMode
+    @State private var editMode: EditMode = .inactive
     @State private var editingFavorite: FavoriteWebsite? = nil
 
     var body: some View {
         List {
-            ForEach(favoritesManager.favorites) { favorite in
-                FavoriteListRow(
-                    favorite: favorite,
-                    onEdit: {
-                        editingFavorite = favorite
+            Section {
+                ForEach(favoritesManager.favorites) { favorite in
+                    let index = favoritesManager.favorites.firstIndex(where: { $0.id == favorite.id }) ?? 0
+
+                    FavoriteListRowWithHeader(
+                        favorite: favorite,
+                        index: index,
+                        isEditMode: editMode.isEditing,
+                        onEdit: {
+                            editingFavorite = favorite
+                        }
+                    )
+                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                }
+                .onMove(perform: moveFavorite)
+                .onDelete(perform: deleteFavorite)
+            }
+        }
+        .listStyle(.insetGrouped)
+        .environment(\.editMode, $editMode)
+        .navigationTitle("Favorites")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(editMode.isEditing ? "Done" : "Edit") {
+                    withAnimation {
+                        editMode = editMode.isEditing ? .inactive : .active
                     }
-                )
-            }
-            .onMove { source, destination in
-                favoritesManager.moveFavorite(from: source, to: destination)
-            }
-            .onDelete { indexSet in
-                indexSet.forEach { index in
-                    let favorite = favoritesManager.favorites[index]
-                    favoritesManager.removeFavoriteById(id: favorite.id)
                 }
             }
         }
-        .environment(\.editMode, .constant(.active))
-        .navigationTitle("Favorites")
-        .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $editingFavorite) { favorite in
             EditFavoriteDetailView(
                 favorite: favorite,
@@ -247,19 +261,64 @@ struct ManageFavoritesView: View {
             )
         }
     }
+
+    private func moveFavorite(from source: IndexSet, to destination: Int) {
+        favoritesManager.moveFavorite(from: source, to: destination)
+    }
+
+    private func deleteFavorite(at indexSet: IndexSet) {
+        indexSet.forEach { index in
+            let favorite = favoritesManager.favorites[index]
+            favoritesManager.removeFavoriteById(id: favorite.id)
+        }
+    }
+}
+
+struct FavoriteListRowWithHeader: View {
+    let favorite: FavoriteWebsite
+    let index: Int
+    let isEditMode: Bool
+    let onEdit: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if index == 0 {
+                Text("SHOWN ON HOME")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.secondary)
+                    .padding(.top, 8)
+                    .padding(.bottom, 8)
+            }
+
+            if index == 8 {
+                Text("HIDDEN")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.secondary)
+                    .padding(.top, 20)
+                    .padding(.bottom, 8)
+            }
+
+            FavoriteListRow(
+                favorite: favorite,
+                isEditMode: isEditMode,
+                onEdit: onEdit
+            )
+        }
+    }
 }
 
 struct FavoriteListRow: View {
     let favorite: FavoriteWebsite
+    let isEditMode: Bool
     let onEdit: () -> Void
     @State private var dominantColor: Color = Color.gray.opacity(0.15)
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             ZStack {
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: 8)
                     .fill(dominantColor)
-                    .frame(width: 48, height: 48)
+                    .frame(width: 38, height: 38)
 
                 AsyncImage(url: URL(string: favorite.faviconURL)) { phase in
                     switch phase {
@@ -267,36 +326,40 @@ struct FavoriteListRow: View {
                         image
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .frame(width: 28, height: 28)
+                            .frame(width: 22, height: 22)
                             .onAppear {
                                 extractColor(from: image)
                             }
                     default:
                         Image(systemName: "globe")
-                            .font(.system(size: 20))
+                            .font(.system(size: 16))
                             .foregroundColor(.blue)
                     }
                 }
             }
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(favorite.title)
                     .font(.system(size: 16, weight: .medium))
+                    .lineLimit(1)
                 Text(favorite.url)
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
                     .lineLimit(1)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-            Spacer()
-
-            Button(action: onEdit) {
-                Image(systemName: "pencil.circle.fill")
-                    .foregroundColor(.blue)
-                    .font(.system(size: 24))
+            if isEditMode {
+                Button(action: onEdit) {
+                    Image(systemName: "pencil.circle.fill")
+                        .foregroundColor(.blue)
+                        .font(.system(size: 22))
+                }
+                .buttonStyle(BorderlessButtonStyle())
             }
-            .buttonStyle(BorderlessButtonStyle())
         }
+        .padding(.vertical, 2)
+        .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
     }
 
     private func extractColor(from image: Image) {
