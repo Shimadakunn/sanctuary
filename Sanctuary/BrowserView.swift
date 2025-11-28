@@ -146,56 +146,264 @@ struct WebViewWrapper: UIViewRepresentable {
         var parent: WebViewWrapper
         var currentURL: URL?
 
+        // Whitelist for bypassing ad blocking (user can add sites here)
+        private var whitelist: Set<String> = []
+
+        // Timing tracking to detect rapid redirects (common ad pattern)
+        private var lastNavigationTime: Date?
+        private var rapidRedirectCount: Int = 0
+
         init(_ parent: WebViewWrapper) {
             self.parent = parent
         }
 
-        func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-            print("🔍 [Navigation Policy] Type: \(navigationAction.navigationType.rawValue), URL: \(navigationAction.request.url?.absoluteString ?? "nil"), SourceFrame: \(navigationAction.sourceFrame.request.url?.absoluteString ?? "nil")")
+        // MARK: - Base Domain Detection (uBlock-style first-party/third-party detection)
 
-            // Always allow about:blank (used by many sites for internal operations)
-            if let targetURL = navigationAction.request.url,
-               targetURL.absoluteString == "about:blank" {
+        /// Extract base domain using Public Suffix List logic
+        /// For example: "www.example.com" -> "example.com", "blog.github.io" -> "blog.github.io"
+        private func getBaseDomain(from url: URL) -> String? {
+            guard let host = url.host else { return nil }
+
+            // Simple implementation - iOS doesn't have built-in PSL, so we use basic heuristics
+            // For production, consider using a proper Public Suffix List library
+            let components = host.split(separator: ".")
+            guard components.count >= 2 else { return host }
+
+            // Handle common multi-part TLDs (.co.uk, .com.au, etc.)
+            let multiPartTLDs = ["co.uk", "com.au", "co.jp", "co.nz", "com.br", "co.za"]
+            let lastTwo = components.suffix(2).joined(separator: ".")
+
+            if multiPartTLDs.contains(lastTwo) {
+                // Need at least 3 components for multi-part TLD
+                guard components.count >= 3 else { return host }
+                return components.suffix(3).joined(separator: ".")
+            } else {
+                // Standard TLD - return last two components
+                return lastTwo
+            }
+        }
+
+        /// Check if request is third-party relative to document (uBlock-style)
+        private func isThirdParty(requestURL: URL, documentURL: URL) -> Bool {
+            guard let requestDomain = getBaseDomain(from: requestURL),
+                  let documentDomain = getBaseDomain(from: documentURL) else {
+                return true // Assume third-party if we can't determine
+            }
+            return requestDomain != documentDomain
+        }
+
+        // MARK: - Improved Ad Blocking Logic
+
+        func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+            guard let targetURL = navigationAction.request.url else {
                 decisionHandler(.allow)
                 return
             }
 
-            // Block "other" type navigation that appears to be going backwards
-            if navigationAction.navigationType == .other {
-                if let sourceURL = navigationAction.sourceFrame.request.url,
-                   let targetURL = navigationAction.request.url {
+            let sourceURL = navigationAction.sourceFrame.request.url
+            let navigationType = navigationAction.navigationType
+            let isMainFrame = navigationAction.targetFrame?.isMainFrame ?? false
 
-                    // Allow same-page navigation (anchors, hash changes)
-                    if sourceURL.absoluteString == targetURL.absoluteString {
-                        decisionHandler(.allow)
-                        return
+            print("🔍 [Navigation Policy] Type: \(navigationType.rawValue), MainFrame: \(isMainFrame), Target: \(targetURL.absoluteString), Source: \(sourceURL?.absoluteString ?? "nil")")
+
+            // RULE 1: Always allow about:blank and data: URLs (used by legitimate sites)
+            if targetURL.scheme == "about" || targetURL.scheme == "data" {
+                decisionHandler(.allow)
+                return
+            }
+
+            // RULE 2: Check whitelist (highest priority - like uBlock's trusted sites)
+            if let targetHost = targetURL.host, whitelist.contains(targetHost) {
+                print("✅ [Whitelist] Allowing navigation to whitelisted domain: \(targetHost)")
+                decisionHandler(.allow)
+                return
+            }
+
+            // RULE 3: Always allow user-initiated navigation (uBlock principle)
+            // These are explicit user actions that should never be blocked
+            switch navigationType {
+            case .linkActivated:  // User clicked a link
+                print("✅ [User Action] Link click - allowing")
+                resetRedirectTracking()
+                decisionHandler(.allow)
+                return
+
+            case .formSubmitted:  // User submitted a form
+                print("✅ [User Action] Form submission - allowing")
+                resetRedirectTracking()
+                decisionHandler(.allow)
+                return
+
+            case .backForward:    // User navigated via back/forward buttons
+                print("✅ [User Action] Back/forward navigation - allowing")
+                resetRedirectTracking()
+                decisionHandler(.allow)
+                return
+
+            case .reload:         // User reloaded the page
+                print("✅ [User Action] Page reload - allowing")
+                resetRedirectTracking()
+                decisionHandler(.allow)
+                return
+
+            case .formResubmitted: // User resubmitted a form
+                print("✅ [User Action] Form resubmission - allowing")
+                resetRedirectTracking()
+                decisionHandler(.allow)
+                return
+
+            case .other:
+                // Programmatic navigation - apply strict filtering
+                break
+
+            @unknown default:
+                // Future navigation types - be conservative and allow
+                print("⚠️ [Unknown Navigation Type] Allowing")
+                decisionHandler(.allow)
+                return
+            }
+
+            // Beyond this point: We're dealing with .other (programmatic) navigation
+            // Apply uBlock-inspired heuristics to detect ads/trackers
+
+            guard let sourceURL = sourceURL else {
+                // No source URL - likely initial page load, allow
+                decisionHandler(.allow)
+                return
+            }
+
+            // RULE 4: Same-page navigation (anchors, hash changes) - always allow
+            if sourceURL.absoluteString == targetURL.absoluteString {
+                decisionHandler(.allow)
+                return
+            }
+
+            // RULE 5: Detect rapid redirect chains (common ad pattern)
+            let now = Date()
+            if let lastTime = lastNavigationTime, now.timeIntervalSince(lastTime) < 0.5 {
+                rapidRedirectCount += 1
+                if rapidRedirectCount > 2 {
+                    print("🚫 [Blocked] Rapid redirect chain detected (\(rapidRedirectCount) redirects in <500ms)")
+                    decisionHandler(.cancel)
+                    return
+                }
+            } else {
+                rapidRedirectCount = 0
+            }
+            lastNavigationTime = now
+
+            // RULE 6: Third-party detection using base domain comparison (uBlock-style)
+            let isThirdPartyNav = isThirdParty(requestURL: targetURL, documentURL: sourceURL)
+
+            if isThirdPartyNav {
+                // Third-party programmatic navigation
+
+                // RULE 6a: Block third-party backwards navigation in history (ad redirect pattern)
+                if webView.backForwardList.backList.contains(where: { $0.url == targetURL }) {
+                    print("🚫 [Blocked] Third-party backwards redirect: \(sourceURL.host ?? "unknown") -> \(targetURL.host ?? "unknown")")
+                    decisionHandler(.cancel)
+                    return
+                }
+
+                // RULE 6b: Block third-party navigation in subframes (common for ad iframes)
+                // BUT allow legitimate video/media embeds
+                if !isMainFrame {
+                    // Allow legitimate video/media domains
+                    let legitimateDomains = [
+                        "youtube.com", "youtu.be", "youtube-nocookie.com",
+                        "vimeo.com", "player.vimeo.com",
+                        "dailymotion.com", "dai.ly",
+                        "twitch.tv", "player.twitch.tv",
+                        "facebook.com", "fb.com",
+                        "instagram.com",
+                        "twitter.com", "x.com",
+                        "tiktok.com",
+                        "soundcloud.com",
+                        "spotify.com",
+                        "reddit.com",
+                        "streamable.com",
+                        "wistia.com", "fast.wistia.com",
+                        "vidyard.com",
+                        "brightcove.com",
+                        "jwplatform.com", "jwplayer.com",
+                        "flowplayer.com",
+                        "cloudflare.com", "cloudflarestream.com",
+                        "videojs.com",
+                        "9animetv.to"
+                    ]
+
+                    let targetHost = targetURL.host?.lowercased() ?? ""
+                    let isLegitimate = legitimateDomains.contains { domain in
+                        targetHost == domain || targetHost.hasSuffix(".\(domain)")
                     }
 
-                    // Block cross-origin backwards navigation (e.g., site redirecting back to Google)
-                    if sourceURL.host != targetURL.host,
-                       webView.backForwardList.backList.contains(where: { $0.url == targetURL }) {
-                        print("🚫 [Navigation Blocked] Cross-origin backwards redirect from \(sourceURL.host ?? "unknown") to \(targetURL.host ?? "unknown")")
+                    // Also check for known ad patterns in URL
+                    let urlString = targetURL.absoluteString.lowercased()
+                    let adPatterns = [
+                        "/ads/", "/ad/", "/advert", "doubleclick", "googlesyndication",
+                        "advertising", "/banner", "/popup", "adserver", "adservice",
+                        "/sponsor", "pagead", "adsystem", "adtech"
+                    ]
+                    let hasAdPattern = adPatterns.contains { urlString.contains($0) }
+
+                    if !isLegitimate || hasAdPattern {
+                        print("🚫 [Blocked] Third-party subframe navigation: \(sourceURL.host ?? "unknown") -> \(targetURL.host ?? "unknown")")
+                        decisionHandler(.cancel)
+                        return
+                    } else {
+                        print("✅ [Legitimate iframe] Allowing third-party media/video embed: \(targetHost)")
+                    }
+                }
+
+                // RULE 6c: Allow third-party main frame navigation (might be legitimate oauth/payment)
+                // But log it for visibility
+                print("⚠️ [Third-party] Allowing main frame third-party navigation: \(sourceURL.host ?? "unknown") -> \(targetURL.host ?? "unknown")")
+            } else {
+                // First-party programmatic navigation - be more lenient
+
+                // RULE 7: Block backwards programmatic navigation in main frame
+                // This prevents pages from redirecting users back to homepage/shallower paths
+                if isMainFrame {
+                    let sourcePathComponents = sourceURL.pathComponents
+                    let targetPathComponents = targetURL.pathComponents
+
+                    // Check if this is backwards navigation (to a shallower path)
+                    if targetPathComponents.count < sourcePathComponents.count {
+                        print("🚫 [Blocked] Programmatic backwards navigation: \(sourceURL.path) -> \(targetURL.path)")
                         decisionHandler(.cancel)
                         return
                     }
 
-                    // Check if this is a suspicious same-host backwards navigation
-                    // (navigating to a simpler/parent URL from a more complex one)
-                    let sourcePathComponents = sourceURL.pathComponents
-                    let targetPathComponents = targetURL.pathComponents
+                    // Forward or same-level navigation is OK
+                    print("✅ [First-party] Allowing first-party main frame forward navigation")
+                    decisionHandler(.allow)
+                    return
+                }
 
-                    // If target has fewer path components and same host, it's likely unwanted back navigation
-                    if sourceURL.host == targetURL.host,
-                       targetPathComponents.count < sourcePathComponents.count,
-                       sourceURL.absoluteString != targetURL.absoluteString {
-                        print("🚫 [Navigation Blocked] Suspicious backwards navigation from \(sourceURL.path) to \(targetURL.path)")
+                // RULE 8: Check suspicious patterns in first-party subframe navigation
+                let sourcePathComponents = sourceURL.pathComponents
+                let targetPathComponents = targetURL.pathComponents
+
+                // Only block if going backwards AND has suspicious query parameters (tracking)
+                if targetPathComponents.count < sourcePathComponents.count {
+                    let suspiciousParams = ["ad", "ads", "click", "track", "utm_", "ref=", "affiliate"]
+                    let queryString = targetURL.query?.lowercased() ?? ""
+
+                    if suspiciousParams.contains(where: { queryString.contains($0) }) {
+                        print("🚫 [Blocked] First-party backwards navigation with tracking params: \(sourceURL.path) -> \(targetURL.path)")
                         decisionHandler(.cancel)
                         return
                     }
                 }
             }
 
+            // Default: Allow
             decisionHandler(.allow)
+        }
+
+        private func resetRedirectTracking() {
+            rapidRedirectCount = 0
+            lastNavigationTime = nil
         }
 
         func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
