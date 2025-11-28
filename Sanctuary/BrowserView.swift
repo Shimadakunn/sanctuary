@@ -306,10 +306,53 @@ struct WebViewWrapper: UIViewRepresentable {
                 }
 
                 // RULE 6b: Block third-party navigation in subframes (common for ad iframes)
+                // BUT allow legitimate video/media embeds
                 if !isMainFrame {
-                    print("🚫 [Blocked] Third-party subframe navigation: \(sourceURL.host ?? "unknown") -> \(targetURL.host ?? "unknown")")
-                    decisionHandler(.cancel)
-                    return
+                    // Allow legitimate video/media domains
+                    let legitimateDomains = [
+                        "youtube.com", "youtu.be", "youtube-nocookie.com",
+                        "vimeo.com", "player.vimeo.com",
+                        "dailymotion.com", "dai.ly",
+                        "twitch.tv", "player.twitch.tv",
+                        "facebook.com", "fb.com",
+                        "instagram.com",
+                        "twitter.com", "x.com",
+                        "tiktok.com",
+                        "soundcloud.com",
+                        "spotify.com",
+                        "reddit.com",
+                        "streamable.com",
+                        "wistia.com", "fast.wistia.com",
+                        "vidyard.com",
+                        "brightcove.com",
+                        "jwplatform.com", "jwplayer.com",
+                        "flowplayer.com",
+                        "cloudflare.com", "cloudflarestream.com",
+                        "videojs.com",
+                        "9animetv.to"
+                    ]
+
+                    let targetHost = targetURL.host?.lowercased() ?? ""
+                    let isLegitimate = legitimateDomains.contains { domain in
+                        targetHost == domain || targetHost.hasSuffix(".\(domain)")
+                    }
+
+                    // Also check for known ad patterns in URL
+                    let urlString = targetURL.absoluteString.lowercased()
+                    let adPatterns = [
+                        "/ads/", "/ad/", "/advert", "doubleclick", "googlesyndication",
+                        "advertising", "/banner", "/popup", "adserver", "adservice",
+                        "/sponsor", "pagead", "adsystem", "adtech"
+                    ]
+                    let hasAdPattern = adPatterns.contains { urlString.contains($0) }
+
+                    if !isLegitimate || hasAdPattern {
+                        print("🚫 [Blocked] Third-party subframe navigation: \(sourceURL.host ?? "unknown") -> \(targetURL.host ?? "unknown")")
+                        decisionHandler(.cancel)
+                        return
+                    } else {
+                        print("✅ [Legitimate iframe] Allowing third-party media/video embed: \(targetHost)")
+                    }
                 }
 
                 // RULE 6c: Allow third-party main frame navigation (might be legitimate oauth/payment)
@@ -318,10 +361,21 @@ struct WebViewWrapper: UIViewRepresentable {
             } else {
                 // First-party programmatic navigation - be more lenient
 
-                // RULE 7: Allow first-party navigation in main frame
-                // This fixes the false positive issue with legitimate site navigation
+                // RULE 7: Block backwards programmatic navigation in main frame
+                // This prevents pages from redirecting users back to homepage/shallower paths
                 if isMainFrame {
-                    print("✅ [First-party] Allowing first-party main frame navigation")
+                    let sourcePathComponents = sourceURL.pathComponents
+                    let targetPathComponents = targetURL.pathComponents
+
+                    // Check if this is backwards navigation (to a shallower path)
+                    if targetPathComponents.count < sourcePathComponents.count {
+                        print("🚫 [Blocked] Programmatic backwards navigation: \(sourceURL.path) -> \(targetURL.path)")
+                        decisionHandler(.cancel)
+                        return
+                    }
+
+                    // Forward or same-level navigation is OK
+                    print("✅ [First-party] Allowing first-party main frame forward navigation")
                     decisionHandler(.allow)
                     return
                 }
