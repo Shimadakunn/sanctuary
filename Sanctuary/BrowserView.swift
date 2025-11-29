@@ -32,8 +32,11 @@ struct BrowserView: View {
 
                 HStack {
                     Button(action: {
-                        print("⬅️ [Back Button Pressed] CanGoBack: \(canGoBack)")
-                        if canGoBack {
+                        // Check the WebView's actual canGoBack state directly (more reliable than binding)
+                        let webViewCanGoBack = webViewStore.webView?.canGoBack ?? false
+                        print("⬅️ [Back Button Pressed] CanGoBack Binding: \(canGoBack), WebView CanGoBack: \(webViewCanGoBack)")
+
+                        if webViewCanGoBack {
                             print("⬅️ [Back Button] Calling webView.goBack()")
                             webViewStore.webView?.goBack()
                         } else {
@@ -327,8 +330,108 @@ struct WebViewWrapper: UIViewRepresentable {
         configuration.allowsInlineMediaPlayback = true
         configuration.mediaTypesRequiringUserActionForPlayback = []
 
+        // Inject JavaScript to block pop-ups and ads
+        let popupBlockerScript = """
+        // Block window.open pop-ups
+        window.open = function() {
+            console.log('🚫 Pop-up blocked by JavaScript');
+            return null;
+        };
+
+        // Inject CSS to hide common ad elements
+        (function() {
+            const style = document.createElement('style');
+            style.textContent = `
+                iframe[src*="infolinks"],
+                iframe[src*="a-ads"],
+                iframe[src*="ad."],
+                iframe[src*="/ad/"],
+                iframe[src*="ads."],
+                iframe[src*="doubleclick"],
+                iframe[src*="googlesyndication"],
+                iframe[src*="advertising"],
+                div[id*="ad-"],
+                div[class*="ad-"],
+                div[id*="_ad_"],
+                div[class*="_ad_"],
+                .advertisement,
+                .ad-container,
+                .ad-banner,
+                [class*="AdSpace"],
+                [id*="AdSpace"] {
+                    display: none !important;
+                    visibility: hidden !important;
+                    width: 0 !important;
+                    height: 0 !important;
+                }
+            `;
+            document.head.appendChild(style);
+        })();
+
+        // Block common ad insertion methods
+        (function() {
+            // Store original methods
+            const originalCreateElement = document.createElement;
+
+            // Override createElement to block ad iframes
+            document.createElement = function(tagName) {
+                const element = originalCreateElement.call(document, tagName);
+
+                if (tagName.toLowerCase() === 'iframe') {
+                    // Monitor iframe src changes
+                    const originalSetAttribute = element.setAttribute;
+                    element.setAttribute = function(name, value) {
+                        if (name === 'src' && value) {
+                            const adPatterns = [
+                                'ad', 'banner', 'popup', 'tracker',
+                                'doubleclick', 'googlesyndication',
+                                'infolinks', 'a-ads', '/ads/',
+                                'advertising', 'adservice'
+                            ];
+                            const lowerValue = value.toLowerCase();
+
+                            for (const pattern of adPatterns) {
+                                if (lowerValue.includes(pattern)) {
+                                    console.log('🚫 Ad iframe blocked:', value);
+                                    return;
+                                }
+                            }
+                        }
+                        return originalSetAttribute.call(this, name, value);
+                    };
+                }
+
+                return element;
+            };
+        })();
+
+        // Block common redirect techniques
+        let isRedirecting = false;
+        const originalPushState = history.pushState;
+        const originalReplaceState = history.replaceState;
+
+        history.pushState = function() {
+            if (!isRedirecting) {
+                return originalPushState.apply(this, arguments);
+            }
+        };
+
+        history.replaceState = function() {
+            if (!isRedirecting) {
+                return originalReplaceState.apply(this, arguments);
+            }
+        };
+        """
+
+        let userScript = WKUserScript(source: popupBlockerScript, injectionTime: .atDocumentStart, forMainFrameOnly: false)
+        configuration.userContentController.addUserScript(userScript)
+
+        // Suppress JavaScript dialogs (alert, confirm, prompt) to prevent ad pop-ups
+        configuration.suppressesIncrementalRendering = false
+
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator
+        webView.uiDelegate = context.coordinator
         webView.allowsBackForwardNavigationGestures = false
         webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
 
@@ -350,16 +453,96 @@ struct WebViewWrapper: UIViewRepresentable {
         Coordinator(self)
     }
 
-    class Coordinator: NSObject, WKNavigationDelegate {
+    class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
         var parent: WebViewWrapper
         var currentURL: URL?
+
+        // Ad blocking domains list
+        private let adDomains: Set<String> = [
+            "freedomnetvpn.com",
+            "vpn-site.com",
+            "click.vpn-site.com",
+            "doubleclick.net",
+            "googlesyndication.com",
+            "googleadservices.com",
+            "adservice.google.com",
+            "advertising.com",
+            "ad.doubleclick.net",
+            "ads.google.com",
+            "clickadu.com",
+            "propellerads.com",
+            "popads.net",
+            "popcash.net",
+            "adsterra.com",
+            "exoclick.com",
+            "juicyads.com",
+            "trafficjunky.com",
+            "outbrain.com",
+            "taboola.com",
+            "infolinks.com",
+            "router.infolinks.com",
+            "resources.infolinks.com",
+            "a-ads.com",
+            "ad.a-ads.com"
+        ]
+
+        // Suspicious URL patterns (for tracking/ad redirects)
+        private let suspiciousPatterns = [
+            "preland",
+            "tracker",
+            "redirect",
+            "aff_",
+            "click",
+            "track",
+            "zoneid",
+            "bannerid",
+            "campaignid",
+            "clk.htm",
+            "usync",
+            "/action/clk",
+            "ad-click",
+            "adclick"
+        ]
 
         init(_ parent: WebViewWrapper) {
             self.parent = parent
         }
 
+        private func isAdDomain(_ url: URL) -> Bool {
+            guard let host = url.host?.lowercased() else { return false }
+
+            // Check if the host matches any ad domain
+            for adDomain in adDomains {
+                if host == adDomain || host.hasSuffix("." + adDomain) {
+                    return true
+                }
+            }
+
+            return false
+        }
+
+        private func hasSuspiciousPattern(_ url: URL) -> Bool {
+            let urlString = url.absoluteString.lowercased()
+
+            // Check for suspicious patterns in URL
+            for pattern in suspiciousPatterns {
+                if urlString.contains(pattern) {
+                    return true
+                }
+            }
+
+            return false
+        }
+
         func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
             print("🔍 [Navigation Policy] Type: \(navigationAction.navigationType.rawValue), URL: \(navigationAction.request.url?.absoluteString ?? "nil"), SourceFrame: \(navigationAction.sourceFrame.request.url?.absoluteString ?? "nil")")
+
+            // Always allow user-initiated back/forward navigation
+            if navigationAction.navigationType == .backForward {
+                print("✅ [Back/Forward Navigation] Allowing user navigation")
+                decisionHandler(.allow)
+                return
+            }
 
             // Always allow about:blank (used by many sites for internal operations)
             if let targetURL = navigationAction.request.url,
@@ -368,10 +551,37 @@ struct WebViewWrapper: UIViewRepresentable {
                 return
             }
 
+            guard let targetURL = navigationAction.request.url else {
+                decisionHandler(.cancel)
+                return
+            }
+
+            // BLOCK POP-UPS: Block navigation if it's trying to open in a new window/frame
+            if navigationAction.targetFrame == nil {
+                print("🚫 [Pop-up Blocked] New window/frame blocked: \(targetURL.absoluteString)")
+                decisionHandler(.cancel)
+                return
+            }
+
+            // BLOCK AD DOMAINS: Block known ad/tracking domains
+            if isAdDomain(targetURL) {
+                print("🚫 [Ad Blocked] Blocked ad domain: \(targetURL.host ?? "unknown")")
+                decisionHandler(.cancel)
+                return
+            }
+
+            // BLOCK SUSPICIOUS REDIRECTS: If navigating from a legitimate source to a URL with suspicious patterns
+            if let sourceURL = navigationAction.sourceFrame.request.url,
+               sourceURL.host != targetURL.host,
+               hasSuspiciousPattern(targetURL) {
+                print("🚫 [Suspicious URL Blocked] Blocked suspicious redirect: \(targetURL.absoluteString)")
+                decisionHandler(.cancel)
+                return
+            }
+
             // Block "other" type navigation that appears to be going backwards
             if navigationAction.navigationType == .other {
-                if let sourceURL = navigationAction.sourceFrame.request.url,
-                   let targetURL = navigationAction.request.url {
+                if let sourceURL = navigationAction.sourceFrame.request.url {
 
                     // Allow same-page navigation (anchors, hash changes)
                     if sourceURL.absoluteString == targetURL.absoluteString {
@@ -444,6 +654,48 @@ struct WebViewWrapper: UIViewRepresentable {
 
         func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
             print("❌ [Navigation Provisional Fail] Error: \(error.localizedDescription)")
+        }
+
+        // MARK: - WKUIDelegate (Pop-up blocking)
+
+        // Block new window creation (pop-ups)
+        func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+            print("🚫 [Pop-up Blocked] Prevented new window creation: \(navigationAction.request.url?.absoluteString ?? "unknown")")
+            // Return nil to prevent the pop-up from opening
+            return nil
+        }
+
+        // Block JavaScript alert dialogs (often used for ads)
+        func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
+            // Check if this looks like an ad alert
+            let adKeywords = ["winner", "prize", "click here", "congratulations", "virus", "infected"]
+            let lowercaseMessage = message.lowercased()
+
+            for keyword in adKeywords {
+                if lowercaseMessage.contains(keyword) {
+                    print("🚫 [Ad Alert Blocked] Message: \(message)")
+                    completionHandler()
+                    return
+                }
+            }
+
+            // For legitimate alerts, you can choose to show them or block all
+            // For now, blocking all to prevent ad interruptions
+            print("⚠️ [Alert Blocked] Message: \(message)")
+            completionHandler()
+        }
+
+        // Block JavaScript confirm dialogs
+        func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (Bool) -> Void) {
+            print("🚫 [Confirm Dialog Blocked] Message: \(message)")
+            // Always return false to decline
+            completionHandler(false)
+        }
+
+        // Block JavaScript text input dialogs
+        func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (String?) -> Void) {
+            print("🚫 [Text Input Dialog Blocked] Prompt: \(prompt)")
+            completionHandler(nil)
         }
     }
 }
