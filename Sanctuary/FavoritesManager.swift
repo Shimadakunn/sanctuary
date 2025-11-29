@@ -34,19 +34,22 @@ class FavoritesManager: ObservableObject {
         loadFavorites()
         if favorites.isEmpty {
             initializeDefaultFavorites()
+        } else {
+            // Migrate existing favorites to use localized titles
+            migrateToLocalizedTitles()
         }
     }
 
     private func initializeDefaultFavorites() {
         let defaults: [(title: String, url: String, icon: String, color: String)] = [
-            ("YouTube", "https://m.youtube.com", "play.rectangle.fill", "red"),
-            ("Movies/Shows", "https://www.cineby.gd/", "film.fill", "purple"),
-            ("Anime", "https://9animetv.to/home", "sparkles.tv.fill", "pink"),
-            ("Manga", "https://mangafire.to/home", "book.fill", "orange"),
-            ("Live Sports", "https://sportyhunter.com/", "sportscourt.fill", "green"),
-            ("Live TV", "https://tv.garden/", "tv.fill", "blue"),
-            ("eBooks", "https://z-lib.gd/", "books.vertical.fill", "indigo"),
-            ("Comics", "https://readcomicsonline.ru/", "text.book.closed.fill", "yellow"),
+            ("YouTube".localized, "https://m.youtube.com", "play.rectangle.fill", "red"),
+            ("Movies/Shows".localized, "https://www.cineby.gd/", "film.fill", "purple"),
+            ("Anime".localized, "https://9animetv.to/home", "sparkles.tv.fill", "pink"),
+            ("Manga".localized, "https://mangafire.to/home", "book.fill", "orange"),
+            ("Live Sports".localized, "https://sportyhunter.com/", "sportscourt.fill", "green"),
+            ("Live TV".localized, "https://tv.garden/", "tv.fill", "blue"),
+            ("eBooks".localized, "https://z-lib.gd/", "books.vertical.fill", "indigo"),
+            ("Comics".localized, "https://readcomicsonline.ru/", "text.book.closed.fill", "yellow"),
         ]
 
         for (title, url, icon, color) in defaults {
@@ -132,6 +135,39 @@ class FavoritesManager: ObservableObject {
            let decoded = try? JSONDecoder().decode([FavoriteWebsite].self, from: data) {
             favorites = decoded
             print("📚 [Favorites] Loaded \(favorites.count) favorites")
+        }
+    }
+
+    private func migrateToLocalizedTitles() {
+        // Map of URLs to their localization keys
+        let urlToKeyMap: [String: String] = [
+            "https://m.youtube.com": "YouTube",
+            "https://www.cineby.gd/": "Movies/Shows",
+            "https://9animetv.to/home": "Anime",
+            "https://mangafire.to/home": "Manga",
+            "https://sportyhunter.com/": "Live Sports",
+            "https://tv.garden/": "Live TV",
+            "https://z-lib.gd/": "eBooks",
+            "https://readcomicsonline.ru/": "Comics"
+        ]
+
+        var needsUpdate = false
+
+        for index in favorites.indices {
+            if let localizedKey = urlToKeyMap[favorites[index].url] {
+                let localizedTitle = localizedKey.localized
+                // Only update if the title has changed
+                if favorites[index].title != localizedTitle {
+                    print("🔄 [Migration] Updating '\(favorites[index].title)' to '\(localizedTitle)'")
+                    favorites[index].title = localizedTitle
+                    needsUpdate = true
+                }
+            }
+        }
+
+        if needsUpdate {
+            saveFavorites()
+            print("✅ [Migration] Favorites titles updated to localized versions")
         }
     }
 }

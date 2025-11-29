@@ -1,0 +1,70 @@
+/* Settings */
+"Settings" = "الإعدادات";
+"Preferences" = "التفضيلات";
+"Launching App" = "إطلاق التطبيق";
+"Privacy" = "الخصوصية";
+"App Lock" = "قفل التطبيق";
+"Clear Cache" = "مسح ذاكرة التخزين المؤقت";
+"Clear Cookies" = "مسح ملفات تعريف الارتباط";
+"Clear All Website Data" = "مسح جميع بيانات الموقع";
+"About" = "حول";
+"Version" = "الإصدار";
+"Build" = "البناء";
+"About Sanctuary" = "حول Sanctuary";
+
+/* Alerts */
+"Cancel" = "إلغاء";
+"Clear" = "مسح";
+"Done" = "تم";
+"Edit" = "تعديل";
+"Save" = "حفظ";
+
+/* Cache Alert */
+"Clear Cache Alert Message" = "سيؤدي هذا إلى مسح جميع الصور والملفات المخزنة مؤقتًا. قد يؤدي ذلك إلى تحسين الخصوصية وتحرير مساحة التخزين.";
+
+/* Cookies Alert */
+"Clear Cookies Alert Message" = "سيؤدي هذا إلى مسح جميع ملفات تعريف الارتباط. سيتم تسجيل خروجك من المواقع.";
+
+/* Clear All Data Alert */
+"Clear All Website Data Alert Message" = "سيؤدي هذا إلى مسح جميع بيانات الموقع بما في ذلك ذاكرة التخزين المؤقت وملفات تعريف الارتباط والتخزين المحلي. سيتم تسجيل خروجك من جميع المواقع.";
+
+/* HomePage */
+"Search or enter website" = "ابحث أو أدخل موقع الويب";
+"Favorites" = "المفضلة";
+"History" = "السجل";
+"Files" = "الملفات";
+
+/* Favorites */
+"SHOWN ON HOME" = "معروض في الصفحة الرئيسية";
+"HIDDEN" = "مخفي";
+"Edit Favorite" = "تعديل المفضلة";
+"Title" = "العنوان";
+"URL" = "URL";
+
+/* History */
+"No History Yet" = "لا يوجد سجل بعد";
+"No Results" = "لا توجد نتائج";
+"Sites you visit will appear here" = "ستظهر المواقع التي تزورها هنا";
+"Try a different search term" = "جرب مصطلح بحث مختلف";
+"Just now" = "الآن";
+
+/* Startup Page */
+"Home" = "الرئيسية";
+
+/* Default Websites */
+"YouTube" = "YouTube";
+"Movies/Shows" = "أفلام/مسلسلات";
+"Anime" = "أنمي";
+"Manga" = "مانجا";
+"Live Sports" = "رياضة مباشرة";
+"Live TV" = "تلفزيون مباشر";
+"eBooks" = "كتب إلكترونية";
+"Comics" = "كوميكس";
+
+/* Browser Menu Actions */
+"Share" = "مشاركة";
+"Reload" = "إعادة تحميل";
+"Add to Favorites" = "إضافة إلى المفضلة";
+"Remove from Favorites" = "إزالة من المفضلة";
+"Hide" = "إخفاء";
+"Add Favorite" = "إضافة مفضلة";

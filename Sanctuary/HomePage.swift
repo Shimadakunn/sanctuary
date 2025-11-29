@@ -116,19 +116,19 @@ struct HomePage: View {
 
                     // Action Buttons
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 20) {
-                        ActionButton(icon: "heart.fill", title: "Favorites") {
+                        ActionButton(icon: "heart.fill", title: "Favorites".localized) {
                             showManageView = true
                         }
 
-                        ActionButton(icon: "clock.fill", title: "History") {
+                        ActionButton(icon: "clock.fill", title: "History".localized) {
                             showHistoryView = true
                         }
 
-                        ActionButton(icon: "folder.fill", title: "Files") {
+                        ActionButton(icon: "folder.fill", title: "Files".localized) {
                             showFilesView = true
                         }
 
-                        ActionButton(icon: "gearshape.fill", title: "Settings") {
+                        ActionButton(icon: "gearshape.fill", title: "Settings".localized) {
                             showSettingsView = true
                         }
                     }
@@ -302,11 +302,11 @@ struct ManageFavoritesView: View {
         }
         .listStyle(.insetGrouped)
         .environment(\.editMode, $editMode)
-        .navigationTitle("Favorites")
+        .navigationTitle("Favorites".localized)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button(editMode.isEditing ? "Done" : "Edit") {
+                Button(editMode.isEditing ? "Done".localized : "Edit".localized) {
                     withAnimation {
                         editMode = editMode.isEditing ? .inactive : .active
                     }
@@ -343,7 +343,7 @@ struct FavoriteListRowWithHeader: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if index == 0 {
-                Text("SHOWN ON HOME")
+                Text("SHOWN ON HOME".localized)
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(.secondary)
                     .padding(.top, 8)
@@ -351,7 +351,7 @@ struct FavoriteListRowWithHeader: View {
             }
 
             if index == 8 {
-                Text("HIDDEN")
+                Text("HIDDEN".localized)
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(.secondary)
                     .padding(.top, 20)
@@ -545,11 +545,11 @@ struct EditFavoriteDetailView: View {
 
                 VStack(spacing: 15) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Title")
+                        Text("Title".localized)
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.secondary)
                         HStack {
-                            TextField("Title", text: $editedTitle)
+                            TextField("Title".localized, text: $editedTitle)
                                 .font(.system(size: 16))
 
                             if !editedTitle.isEmpty {
@@ -571,11 +571,11 @@ struct EditFavoriteDetailView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("URL")
+                        Text("URL".localized)
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.secondary)
                         HStack {
-                            TextField("URL", text: $editedURL)
+                            TextField("URL".localized, text: $editedURL)
                                 .font(.system(size: 16))
                                 .autocapitalization(.none)
                                 .keyboardType(.URL)
@@ -606,7 +606,7 @@ struct EditFavoriteDetailView: View {
                     favoritesManager.updateFavorite(id: favorite.id, newTitle: editedTitle, newURL: editedURL)
                     dismiss()
                 }) {
-                    Text("Save")
+                    Text("Save".localized)
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -617,11 +617,11 @@ struct EditFavoriteDetailView: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 30)
             }
-            .navigationTitle("Edit Favorite")
+            .navigationTitle("Edit Favorite".localized)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
+                    Button("Cancel".localized) {
                         dismiss()
                     }
                 }
@@ -707,7 +707,7 @@ struct SearchBar: UIViewRepresentable {
     func makeUIView(context: Context) -> UISearchBar {
         let searchBar = UISearchBar(frame: .zero)
         searchBar.delegate = context.coordinator
-        searchBar.placeholder = "Search or enter website"
+        searchBar.placeholder = "Search or enter website".localized
         searchBar.autocapitalizationType = .none
         searchBar.autocorrectionType = .no
         searchBar.keyboardType = .webSearch
@@ -811,10 +811,10 @@ struct HistoryView: View {
                         Image(systemName: searchText.isEmpty ? "clock" : "magnifyingglass")
                             .font(.system(size: 64))
                             .foregroundColor(.gray.opacity(0.5))
-                        Text(searchText.isEmpty ? "No History Yet" : "No Results")
+                        Text(searchText.isEmpty ? "No History Yet".localized : "No Results".localized)
                             .font(.system(size: 20, weight: .medium))
                             .foregroundColor(.secondary)
-                        Text(searchText.isEmpty ? "Sites you visit will appear here" : "Try a different search term")
+                        Text(searchText.isEmpty ? "Sites you visit will appear here".localized : "Try a different search term".localized)
                             .font(.system(size: 14))
                             .foregroundColor(.secondary)
                     }
@@ -845,12 +845,12 @@ struct HistoryView: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 8)
         }
-        .navigationTitle("History")
+        .navigationTitle("History".localized)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if !historyManager.history.isEmpty {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Clear") {
+                    Button("Clear".localized) {
                         historyManager.clearHistory()
                     }
                     .foregroundColor(.red)
@@ -943,7 +943,7 @@ struct HistoryRow: View {
         let days = Int(interval / 86400)
 
         if minutes < 1 {
-            return "Just now"
+            return "Just now".localized
         } else if minutes < 60 {
             return "\(minutes)m"
         } else if hours < 24 {

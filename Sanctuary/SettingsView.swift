@@ -19,10 +19,10 @@ struct SettingsView: View {
     var body: some View {
         List {
             // Preferences Section
-            Section(header: Text("Preferences")) {
+            Section(header: Text("Preferences".localized)) {
                 NavigationLink(destination: StartupPageView(favoritesManager: favoritesManager)) {
                     HStack {
-                        Text("Launching App")
+                        Text("Launching App".localized)
                         Spacer()
                         Text(getStartupPageTitle())
                             .foregroundColor(.secondary)
@@ -32,13 +32,13 @@ struct SettingsView: View {
             }
 
             // Privacy Section
-            Section(header: Text("Privacy")) {
+            Section(header: Text("Privacy".localized)) {
                 Toggle(isOn: $appLockEnabled) {
                     HStack {
                         Image(systemName: "lock.fill")
                             .foregroundColor(.blue)
                             .frame(width: 24)
-                        Text("App Lock")
+                        Text("App Lock".localized)
                     }
                 }
                 .onChange(of: appLockEnabled) { _, newValue in
@@ -52,7 +52,7 @@ struct SettingsView: View {
                         Image(systemName: "trash")
                             .foregroundColor(.red)
                             .frame(width: 24)
-                        Text("Clear Cache")
+                        Text("Clear Cache".localized)
                             .foregroundColor(.primary)
                         Spacer()
                     }
@@ -65,7 +65,7 @@ struct SettingsView: View {
                         Image(systemName: "list.bullet.rectangle")
                             .foregroundColor(.red)
                             .frame(width: 24)
-                        Text("Clear Cookies")
+                        Text("Clear Cookies".localized)
                             .foregroundColor(.primary)
                         Spacer()
                     }
@@ -78,7 +78,7 @@ struct SettingsView: View {
                         Image(systemName: "exclamationmark.triangle")
                             .foregroundColor(.red)
                             .frame(width: 24)
-                        Text("Clear All Website Data")
+                        Text("Clear All Website Data".localized)
                             .foregroundColor(.primary)
                         Spacer()
                     }
@@ -86,16 +86,16 @@ struct SettingsView: View {
             }
 
             // About Section
-            Section(header: Text("About")) {
+            Section(header: Text("About".localized)) {
                 HStack {
-                    Text("Version")
+                    Text("Version".localized)
                     Spacer()
                     Text(getAppVersion())
                         .foregroundColor(.secondary)
                 }
 
                 HStack {
-                    Text("Build")
+                    Text("Build".localized)
                     Spacer()
                     Text(getBuildNumber())
                         .foregroundColor(.secondary)
@@ -108,7 +108,7 @@ struct SettingsView: View {
                         Image(systemName: "info.circle")
                             .foregroundColor(.blue)
                             .frame(width: 24)
-                        Text("About Sanctuary")
+                        Text("About Sanctuary".localized)
                             .foregroundColor(.primary)
                         Spacer()
                         Image(systemName: "chevron.right")
@@ -118,31 +118,31 @@ struct SettingsView: View {
                 }
             }
         }
-        .navigationTitle("Settings")
+        .navigationTitle("Settings".localized)
         .navigationBarTitleDisplayMode(.inline)
-        .alert("Clear Cache", isPresented: $showClearCacheAlert) {
-            Button("Cancel", role: .cancel) { }
-            Button("Clear", role: .destructive) {
+        .alert("Clear Cache".localized, isPresented: $showClearCacheAlert) {
+            Button("Cancel".localized, role: .cancel) { }
+            Button("Clear".localized, role: .destructive) {
                 clearCache()
             }
         } message: {
-            Text("This will clear all cached images and files. This may improve privacy and free up storage space.")
+            Text("Clear Cache Alert Message".localized)
         }
-        .alert("Clear Cookies", isPresented: $showClearCookiesAlert) {
-            Button("Cancel", role: .cancel) { }
-            Button("Clear", role: .destructive) {
+        .alert("Clear Cookies".localized, isPresented: $showClearCookiesAlert) {
+            Button("Cancel".localized, role: .cancel) { }
+            Button("Clear".localized, role: .destructive) {
                 clearCookies()
             }
         } message: {
-            Text("This will clear all cookies. You will be logged out of websites.")
+            Text("Clear Cookies Alert Message".localized)
         }
-        .alert("Clear All Website Data", isPresented: $showClearAllDataAlert) {
-            Button("Cancel", role: .cancel) { }
-            Button("Clear", role: .destructive) {
+        .alert("Clear All Website Data".localized, isPresented: $showClearAllDataAlert) {
+            Button("Cancel".localized, role: .cancel) { }
+            Button("Clear".localized, role: .destructive) {
                 clearAllWebsiteData()
             }
         } message: {
-            Text("This will clear all website data including cache, cookies, and local storage. You will be logged out of all websites.")
+            Text("Clear All Website Data Alert Message".localized)
         }
     }
 
@@ -183,7 +183,7 @@ struct SettingsView: View {
 
     private func getStartupPageTitle() -> String {
         if startupPageURL.isEmpty {
-            return "Home"
+            return "Home".localized
         }
 
         // Find the favorite with matching URL
@@ -191,7 +191,7 @@ struct SettingsView: View {
             return favorite.title
         }
 
-        return "Home"
+        return "Home".localized
     }
 }
 

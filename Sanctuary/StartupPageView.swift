@@ -29,7 +29,7 @@ struct StartupPageView: View {
                             .foregroundColor(.blue)
                     }
 
-                    Text("Home")
+                    Text("Home".localized)
                         .foregroundColor(.primary)
 
                     Spacer()
@@ -62,7 +62,7 @@ struct StartupPageView: View {
                 }
             }
         }
-        .navigationTitle("Launching App")
+        .navigationTitle("Launching App".localized)
         .navigationBarTitleDisplayMode(.inline)
     }
 }

@@ -1,0 +1,70 @@
+/* Settings */
+"Settings" = "設定";
+"Preferences" = "環境設定";
+"Launching App" = "アプリの起動";
+"Privacy" = "プライバシー";
+"App Lock" = "アプリロック";
+"Clear Cache" = "キャッシュを削除";
+"Clear Cookies" = "Cookieを削除";
+"Clear All Website Data" = "すべてのWebサイトデータを削除";
+"About" = "について";
+"Version" = "バージョン";
+"Build" = "ビルド";
+"About Sanctuary" = "Sanctuaryについて";
+
+/* Alerts */
+"Cancel" = "キャンセル";
+"Clear" = "削除";
+"Done" = "完了";
+"Edit" = "編集";
+"Save" = "保存";
+
+/* Cache Alert */
+"Clear Cache Alert Message" = "これにより、キャッシュされたすべての画像とファイルが削除されます。プライバシーが向上し、ストレージ容量が解放される可能性があります。";
+
+/* Cookies Alert */
+"Clear Cookies Alert Message" = "これにより、すべてのCookieが削除されます。Webサイトからログアウトされます。";
+
+/* Clear All Data Alert */
+"Clear All Website Data Alert Message" = "これにより、キャッシュ、Cookie、ローカルストレージを含むすべてのWebサイトデータが削除されます。すべてのWebサイトからログアウトされます。";
+
+/* HomePage */
+"Search or enter website" = "検索またはWebサイトを入力";
+"Favorites" = "お気に入り";
+"History" = "履歴";
+"Files" = "ファイル";
+
+/* Favorites */
+"SHOWN ON HOME" = "ホームに表示";
+"HIDDEN" = "非表示";
+"Edit Favorite" = "お気に入りを編集";
+"Title" = "タイトル";
+"URL" = "URL";
+
+/* History */
+"No History Yet" = "履歴はまだありません";
+"No Results" = "結果なし";
+"Sites you visit will appear here" = "訪問したサイトがここに表示されます";
+"Try a different search term" = "別の検索キーワードを試してください";
+"Just now" = "たった今";
+
+/* Startup Page */
+"Home" = "ホーム";
+
+/* Default Websites */
+"YouTube" = "YouTube";
+"Movies/Shows" = "映画/番組";
+"Anime" = "アニメ";
+"Manga" = "マンガ";
+"Live Sports" = "ライブスポーツ";
+"Live TV" = "ライブTV";
+"eBooks" = "電子書籍";
+"Comics" = "コミック";
+
+/* Browser Menu Actions */
+"Share" = "共有";
+"Reload" = "再読み込み";
+"Add to Favorites" = "お気に入りに追加";
+"Remove from Favorites" = "お気に入りから削除";
+"Hide" = "非表示";
+"Add Favorite" = "お気に入りを追加";

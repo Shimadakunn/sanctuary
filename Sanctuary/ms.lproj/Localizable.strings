@@ -1,0 +1,70 @@
+/* Settings */
+"Settings" = "Tetapan";
+"Preferences" = "Keutamaan";
+"Launching App" = "Melancarkan Apl";
+"Privacy" = "Privasi";
+"App Lock" = "Kunci Apl";
+"Clear Cache" = "Kosongkan Cache";
+"Clear Cookies" = "Kosongkan Kuki";
+"Clear All Website Data" = "Kosongkan Semua Data Laman Web";
+"About" = "Perihal";
+"Version" = "Versi";
+"Build" = "Build";
+"About Sanctuary" = "Perihal Sanctuary";
+
+/* Alerts */
+"Cancel" = "Batal";
+"Clear" = "Kosongkan";
+"Done" = "Selesai";
+"Edit" = "Edit";
+"Save" = "Simpan";
+
+/* Cache Alert */
+"Clear Cache Alert Message" = "Ini akan mengosongkan semua imej dan fail yang di-cache. Ini boleh meningkatkan privasi dan membebaskan ruang storan.";
+
+/* Cookies Alert */
+"Clear Cookies Alert Message" = "Ini akan mengosongkan semua kuki. Anda akan dilog keluar daripada laman web.";
+
+/* Clear All Data Alert */
+"Clear All Website Data Alert Message" = "Ini akan mengosongkan semua data laman web termasuk cache, kuki dan storan tempatan. Anda akan dilog keluar daripada semua laman web.";
+
+/* HomePage */
+"Search or enter website" = "Cari atau masukkan laman web";
+"Favorites" = "Kegemaran";
+"History" = "Sejarah";
+"Files" = "Fail";
+
+/* Favorites */
+"SHOWN ON HOME" = "DITUNJUKKAN DI LAMAN UTAMA";
+"HIDDEN" = "TERSEMBUNYI";
+"Edit Favorite" = "Edit Kegemaran";
+"Title" = "Tajuk";
+"URL" = "URL";
+
+/* History */
+"No History Yet" = "Tiada Sejarah Lagi";
+"No Results" = "Tiada Hasil";
+"Sites you visit will appear here" = "Laman yang anda lawati akan muncul di sini";
+"Try a different search term" = "Cuba istilah carian yang berbeza";
+"Just now" = "Sebentar tadi";
+
+/* Startup Page */
+"Home" = "Laman Utama";
+
+/* Default Websites */
+"YouTube" = "YouTube";
+"Movies/Shows" = "Filem/Rancangan";
+"Anime" = "Anime";
+"Manga" = "Manga";
+"Live Sports" = "Sukan Langsung";
+"Live TV" = "TV Langsung";
+"eBooks" = "Buku Elektronik";
+"Comics" = "Komik";
+
+/* Browser Menu Actions */
+"Share" = "Kongsi";
+"Reload" = "Muat Semula";
+"Add to Favorites" = "Tambah ke Kegemaran";
+"Remove from Favorites" = "Buang dari Kegemaran";
+"Hide" = "Sembunyikan";
+"Add Favorite" = "Tambah Kegemaran";

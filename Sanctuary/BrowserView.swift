@@ -98,7 +98,7 @@ struct BrowserView: View {
                             .fill(Color.adaptiveSecondaryLabel.opacity(0.4))
                             .frame(width: 40, height: 4)
                             .padding(.top, 8)
-                            .padding(.bottom, 12)
+                            .padding(.bottom, 4)
 
                         Button(action: {
                             withAnimation(.easeInOut(duration: 0.3)) {
@@ -118,7 +118,7 @@ struct BrowserView: View {
                                     .foregroundColor(.primary)
                                     .frame(width: 24)
 
-                                Text("Share")
+                                Text("Share".localized)
                                     .font(.system(size: 16))
                                     .foregroundColor(.primary)
 
@@ -141,7 +141,7 @@ struct BrowserView: View {
                                     .foregroundColor(.primary)
                                     .frame(width: 24)
 
-                                Text("Reload")
+                                Text("Reload".localized)
                                     .font(.system(size: 16))
                                     .foregroundColor(.primary)
 
@@ -172,7 +172,7 @@ struct BrowserView: View {
                                     .foregroundColor(favoritesManager.isFavorite(url: webViewStore.webView?.url?.absoluteString) ? .red : .primary)
                                     .frame(width: 24)
 
-                                Text(favoritesManager.isFavorite(url: webViewStore.webView?.url?.absoluteString) ? "Remove from Favorites" : "Add to Favorites")
+                                Text(favoritesManager.isFavorite(url: webViewStore.webView?.url?.absoluteString) ? "Remove from Favorites".localized : "Add to Favorites".localized)
                                     .font(.system(size: 16))
                                     .foregroundColor(.primary)
 
@@ -195,7 +195,7 @@ struct BrowserView: View {
                                     .foregroundColor(.primary)
                                     .frame(width: 24)
 
-                                Text("Home")
+                                Text("Home".localized)
                                     .font(.system(size: 16))
                                     .foregroundColor(.primary)
 
@@ -221,7 +221,7 @@ struct BrowserView: View {
                                     .foregroundColor(.primary)
                                     .frame(width: 24)
 
-                                Text("Hide")
+                                Text("Hide".localized)
                                     .font(.system(size: 16))
                                     .foregroundColor(.primary)
 
@@ -753,11 +753,11 @@ struct AddFavoriteView: View {
 
                 VStack(spacing: 15) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Title")
+                        Text("Title".localized)
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.secondary)
                         HStack {
-                            TextField("Title", text: $initialTitle)
+                            TextField("Title".localized, text: $initialTitle)
                                 .font(.system(size: 16))
 
                             if !initialTitle.isEmpty {
@@ -779,11 +779,11 @@ struct AddFavoriteView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("URL")
+                        Text("URL".localized)
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.secondary)
                         HStack {
-                            TextField("URL", text: $initialURL)
+                            TextField("URL".localized, text: $initialURL)
                                 .font(.system(size: 16))
                                 .autocapitalization(.none)
                                 .keyboardType(.URL)
@@ -814,7 +814,7 @@ struct AddFavoriteView: View {
                     favoritesManager.addFavorite(title: initialTitle, url: initialURL)
                     dismiss()
                 }) {
-                    Text("Save")
+                    Text("Save".localized)
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -825,11 +825,11 @@ struct AddFavoriteView: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 30)
             }
-            .navigationTitle("Add Favorite")
+            .navigationTitle("Add Favorite".localized)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
+                    Button("Cancel".localized) {
                         dismiss()
                     }
                 }

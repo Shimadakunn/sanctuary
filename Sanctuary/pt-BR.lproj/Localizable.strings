@@ -1,0 +1,70 @@
+/* Settings */
+"Settings" = "Configurações";
+"Preferences" = "Preferências";
+"Launching App" = "Iniciar App";
+"Privacy" = "Privacidade";
+"App Lock" = "Bloqueio do App";
+"Clear Cache" = "Limpar Cache";
+"Clear Cookies" = "Limpar Cookies";
+"Clear All Website Data" = "Limpar Todos os Dados";
+"About" = "Sobre";
+"Version" = "Versão";
+"Build" = "Build";
+"About Sanctuary" = "Sobre o Sanctuary";
+
+/* Alerts */
+"Cancel" = "Cancelar";
+"Clear" = "Limpar";
+"Done" = "Concluído";
+"Edit" = "Editar";
+"Save" = "Salvar";
+
+/* Cache Alert */
+"Clear Cache Alert Message" = "Isso limpará todas as imagens e arquivos em cache. Isso pode melhorar a privacidade e liberar espaço de armazenamento.";
+
+/* Cookies Alert */
+"Clear Cookies Alert Message" = "Isso limpará todos os cookies. Você será desconectado dos sites.";
+
+/* Clear All Data Alert */
+"Clear All Website Data Alert Message" = "Isso limpará todos os dados do site, incluindo cache, cookies e armazenamento local. Você será desconectado de todos os sites.";
+
+/* HomePage */
+"Search or enter website" = "Pesquisar ou inserir site";
+"Favorites" = "Favoritos";
+"History" = "Histórico";
+"Files" = "Arquivos";
+
+/* Favorites */
+"SHOWN ON HOME" = "EXIBIDO NA PÁGINA INICIAL";
+"HIDDEN" = "OCULTO";
+"Edit Favorite" = "Editar Favorito";
+"Title" = "Título";
+"URL" = "URL";
+
+/* History */
+"No History Yet" = "Nenhum Histórico Ainda";
+"No Results" = "Sem Resultados";
+"Sites you visit will appear here" = "Os sites que você visitar aparecerão aqui";
+"Try a different search term" = "Tente um termo de pesquisa diferente";
+"Just now" = "Agora mesmo";
+
+/* Startup Page */
+"Home" = "Início";
+
+/* Default Websites */
+"YouTube" = "YouTube";
+"Movies/Shows" = "Filmes/Séries";
+"Anime" = "Anime";
+"Manga" = "Mangá";
+"Live Sports" = "Esportes ao Vivo";
+"Live TV" = "TV ao Vivo";
+"eBooks" = "Livros Digitais";
+"Comics" = "Quadrinhos";
+
+/* Browser Menu Actions */
+"Share" = "Compartilhar";
+"Reload" = "Recarregar";
+"Add to Favorites" = "Adicionar aos Favoritos";
+"Remove from Favorites" = "Remover dos Favoritos";
+"Hide" = "Ocultar";
+"Add Favorite" = "Adicionar Favorito";

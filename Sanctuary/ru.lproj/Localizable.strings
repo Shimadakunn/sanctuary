@@ -1,0 +1,70 @@
+/* Settings */
+"Settings" = "Настройки";
+"Preferences" = "Предпочтения";
+"Launching App" = "Запуск приложения";
+"Privacy" = "Конфиденциальность";
+"App Lock" = "Блокировка приложения";
+"Clear Cache" = "Очистить кэш";
+"Clear Cookies" = "Очистить файлы cookie";
+"Clear All Website Data" = "Очистить все данные сайтов";
+"About" = "О программе";
+"Version" = "Версия";
+"Build" = "Сборка";
+"About Sanctuary" = "О Sanctuary";
+
+/* Alerts */
+"Cancel" = "Отменить";
+"Clear" = "Очистить";
+"Done" = "Готово";
+"Edit" = "Изменить";
+"Save" = "Сохранить";
+
+/* Cache Alert */
+"Clear Cache Alert Message" = "Это удалит все кэшированные изображения и файлы. Это может улучшить конфиденциальность и освободить место для хранения.";
+
+/* Cookies Alert */
+"Clear Cookies Alert Message" = "Это удалит все файлы cookie. Вы выйдете из аккаунтов на сайтах.";
+
+/* Clear All Data Alert */
+"Clear All Website Data Alert Message" = "Это удалит все данные сайтов, включая кэш, файлы cookie и локальное хранилище. Вы выйдете из аккаунтов на всех сайтах.";
+
+/* HomePage */
+"Search or enter website" = "Поиск или ввод сайта";
+"Favorites" = "Избранное";
+"History" = "История";
+"Files" = "Файлы";
+
+/* Favorites */
+"SHOWN ON HOME" = "ПОКАЗАНО НА ГЛАВНОЙ";
+"HIDDEN" = "СКРЫТО";
+"Edit Favorite" = "Изменить избранное";
+"Title" = "Название";
+"URL" = "URL";
+
+/* History */
+"No History Yet" = "История пока пуста";
+"No Results" = "Нет результатов";
+"Sites you visit will appear here" = "Посещенные сайты появятся здесь";
+"Try a different search term" = "Попробуйте другой поисковый запрос";
+"Just now" = "Только что";
+
+/* Startup Page */
+"Home" = "Главная";
+
+/* Default Websites */
+"YouTube" = "YouTube";
+"Movies/Shows" = "Фильмы/Сериалы";
+"Anime" = "Аниме";
+"Manga" = "Манга";
+"Live Sports" = "Спорт онлайн";
+"Live TV" = "ТВ онлайн";
+"eBooks" = "Электронные книги";
+"Comics" = "Комиксы";
+
+/* Browser Menu Actions */
+"Share" = "Поделиться";
+"Reload" = "Обновить";
+"Add to Favorites" = "Добавить в избранное";
+"Remove from Favorites" = "Удалить из избранного";
+"Hide" = "Скрыть";
+"Add Favorite" = "Добавить в избранное";

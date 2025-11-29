@@ -1,0 +1,70 @@
+/* Settings */
+"Settings" = "Pengaturan";
+"Preferences" = "Preferensi";
+"Launching App" = "Meluncurkan Aplikasi";
+"Privacy" = "Privasi";
+"App Lock" = "Kunci Aplikasi";
+"Clear Cache" = "Hapus Cache";
+"Clear Cookies" = "Hapus Cookie";
+"Clear All Website Data" = "Hapus Semua Data Situs";
+"About" = "Tentang";
+"Version" = "Versi";
+"Build" = "Build";
+"About Sanctuary" = "Tentang Sanctuary";
+
+/* Alerts */
+"Cancel" = "Batal";
+"Clear" = "Hapus";
+"Done" = "Selesai";
+"Edit" = "Edit";
+"Save" = "Simpan";
+
+/* Cache Alert */
+"Clear Cache Alert Message" = "Ini akan menghapus semua gambar dan file yang di-cache. Ini dapat meningkatkan privasi dan membebaskan ruang penyimpanan.";
+
+/* Cookies Alert */
+"Clear Cookies Alert Message" = "Ini akan menghapus semua cookie. Anda akan keluar dari situs web.";
+
+/* Clear All Data Alert */
+"Clear All Website Data Alert Message" = "Ini akan menghapus semua data situs web termasuk cache, cookie, dan penyimpanan lokal. Anda akan keluar dari semua situs web.";
+
+/* HomePage */
+"Search or enter website" = "Cari atau masukkan situs web";
+"Favorites" = "Favorit";
+"History" = "Riwayat";
+"Files" = "File";
+
+/* Favorites */
+"SHOWN ON HOME" = "DITAMPILKAN DI BERANDA";
+"HIDDEN" = "TERSEMBUNYI";
+"Edit Favorite" = "Edit Favorit";
+"Title" = "Judul";
+"URL" = "URL";
+
+/* History */
+"No History Yet" = "Belum Ada Riwayat";
+"No Results" = "Tidak Ada Hasil";
+"Sites you visit will appear here" = "Situs yang Anda kunjungi akan muncul di sini";
+"Try a different search term" = "Coba istilah pencarian yang berbeda";
+"Just now" = "Baru saja";
+
+/* Startup Page */
+"Home" = "Beranda";
+
+/* Default Websites */
+"YouTube" = "YouTube";
+"Movies/Shows" = "Film/Acara";
+"Anime" = "Anime";
+"Manga" = "Manga";
+"Live Sports" = "Olahraga Langsung";
+"Live TV" = "TV Langsung";
+"eBooks" = "Buku Elektronik";
+"Comics" = "Komik";
+
+/* Browser Menu Actions */
+"Share" = "Bagikan";
+"Reload" = "Muat Ulang";
+"Add to Favorites" = "Tambah ke Favorit";
+"Remove from Favorites" = "Hapus dari Favorit";
+"Hide" = "Sembunyikan";
+"Add Favorite" = "Tambah Favorit";
