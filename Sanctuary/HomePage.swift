@@ -127,7 +127,10 @@ struct HomePage: View {
                         .padding(.bottom, 40)
                 }
                 .navigationDestination(isPresented: $showManageView) {
-                    ManageFavoritesView(favoritesManager: favoritesManager, isPresented: $showManageView)
+                    ManageFavoritesView(favoritesManager: favoritesManager, isPresented: $showManageView) { url in
+                        showManageView = false
+                        onQuickAccess(url)
+                    }
                 }
                 .navigationDestination(isPresented: $showHistoryView) {
                     HistoryView(historyManager: historyManager) { url in
@@ -156,26 +159,40 @@ struct FavoriteTile: View {
                         .fill(dominantColor)
                         .frame(width: 60, height: 60)
 
-                    AsyncImage(url: URL(string: faviconURL)) { phase in
-                        switch phase {
-                        case .empty:
-                            ProgressView()
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: 32, height: 32)
+                    if faviconURL.hasPrefix("sf:") {
+                        let components = faviconURL.dropFirst(3).split(separator: ":")
+                        if components.count == 2 {
+                            let iconName = String(components[0])
+                            let colorName = String(components[1])
+                            Image(systemName: iconName)
+                                .font(.system(size: 28))
+                                .foregroundColor(colorFromString(colorName))
                                 .onAppear {
-                                    extractColor(from: image)
+                                    dominantColor = colorFromString(colorName).opacity(0.2)
                                 }
-                        case .failure:
-                            Image(systemName: "globe")
-                                .font(.system(size: 24))
-                                .foregroundColor(.blue)
-                        @unknown default:
-                            Image(systemName: "globe")
-                                .font(.system(size: 24))
-                                .foregroundColor(.blue)
+                        }
+                    } else {
+                        AsyncImage(url: URL(string: faviconURL)) { phase in
+                            switch phase {
+                            case .empty:
+                                ProgressView()
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 32, height: 32)
+                                    .onAppear {
+                                        extractColor(from: image)
+                                    }
+                            case .failure:
+                                Image(systemName: "globe")
+                                    .font(.system(size: 24))
+                                    .foregroundColor(.blue)
+                            @unknown default:
+                                Image(systemName: "globe")
+                                    .font(.system(size: 24))
+                                    .foregroundColor(.blue)
+                            }
                         }
                     }
                 }
@@ -187,6 +204,23 @@ struct FavoriteTile: View {
             }
         }
         .buttonStyle(PlainButtonStyle())
+    }
+
+    private func colorFromString(_ colorName: String) -> Color {
+        switch colorName.lowercased() {
+        case "red": return .red
+        case "blue": return .blue
+        case "green": return .green
+        case "yellow": return .yellow
+        case "orange": return .orange
+        case "purple": return .purple
+        case "pink": return .pink
+        case "indigo": return .indigo
+        case "teal": return .teal
+        case "mint": return .mint
+        case "cyan": return .cyan
+        default: return .blue
+        }
     }
 
     private func extractColor(from image: Image) {
@@ -218,6 +252,7 @@ struct FavoriteTile: View {
 struct ManageFavoritesView: View {
     @ObservedObject var favoritesManager: FavoritesManager
     @Binding var isPresented: Bool
+    let onNavigate: (String) -> Void
     @State private var editMode: EditMode = .inactive
     @State private var editingFavorite: FavoriteWebsite? = nil
 
@@ -233,9 +268,14 @@ struct ManageFavoritesView: View {
                         isEditMode: editMode.isEditing,
                         onEdit: {
                             editingFavorite = favorite
+                        },
+                        onTap: {
+                            if !editMode.isEditing {
+                                onNavigate(favorite.url)
+                            }
                         }
                     )
-                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                    .listRowInsets(EdgeInsets(top: 4, leading: 24, bottom: 4, trailing: 24))
                 }
                 .onMove(perform: moveFavorite)
                 .onDelete(perform: deleteFavorite)
@@ -279,6 +319,7 @@ struct FavoriteListRowWithHeader: View {
     let index: Int
     let isEditMode: Bool
     let onEdit: () -> Void
+    let onTap: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -301,7 +342,8 @@ struct FavoriteListRowWithHeader: View {
             FavoriteListRow(
                 favorite: favorite,
                 isEditMode: isEditMode,
-                onEdit: onEdit
+                onEdit: onEdit,
+                onTap: onTap
             )
         }
     }
@@ -311,55 +353,92 @@ struct FavoriteListRow: View {
     let favorite: FavoriteWebsite
     let isEditMode: Bool
     let onEdit: () -> Void
+    let onTap: () -> Void
     @State private var dominantColor: Color = Color.gray.opacity(0.15)
 
     var body: some View {
-        HStack(spacing: 10) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(dominantColor)
-                    .frame(width: 38, height: 38)
+        Button(action: onTap) {
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(dominantColor)
+                        .frame(width: 40, height: 40)
 
-                AsyncImage(url: URL(string: favorite.faviconURL)) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 22, height: 22)
-                            .onAppear {
-                                extractColor(from: image)
+                    if favorite.faviconURL.hasPrefix("sf:") {
+                        let components = favorite.faviconURL.dropFirst(3).split(separator: ":")
+                        if components.count == 2 {
+                            let iconName = String(components[0])
+                            let colorName = String(components[1])
+                            Image(systemName: iconName)
+                                .font(.system(size: 18))
+                                .foregroundColor(colorFromString(colorName))
+                                .onAppear {
+                                    dominantColor = colorFromString(colorName).opacity(0.2)
+                                }
+                        }
+                    } else {
+                        AsyncImage(url: URL(string: favorite.faviconURL)) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 22, height: 22)
+                                    .onAppear {
+                                        extractColor(from: image)
+                                    }
+                            default:
+                                Image(systemName: "globe")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.blue)
                             }
-                    default:
-                        Image(systemName: "globe")
-                            .font(.system(size: 16))
-                            .foregroundColor(.blue)
+                        }
                     }
                 }
-            }
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(favorite.title)
-                    .font(.system(size: 16, weight: .medium))
-                    .lineLimit(1)
-                Text(favorite.url)
-                    .font(.system(size: 12))
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            if isEditMode {
-                Button(action: onEdit) {
-                    Image(systemName: "pencil.circle.fill")
-                        .foregroundColor(.blue)
-                        .font(.system(size: 22))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(favorite.title)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                    Text(favorite.url)
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
                 }
-                .buttonStyle(BorderlessButtonStyle())
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                if isEditMode {
+                    Button(action: onEdit) {
+                        Image(systemName: "pencil.circle.fill")
+                            .foregroundColor(.blue)
+                            .font(.system(size: 22))
+                    }
+                    .buttonStyle(BorderlessButtonStyle())
+                }
             }
+            .padding(.vertical, 4)
+            .contentShape(Rectangle())
         }
-        .padding(.vertical, 2)
+        .buttonStyle(PlainButtonStyle())
         .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
+    }
+
+    private func colorFromString(_ colorName: String) -> Color {
+        switch colorName.lowercased() {
+        case "red": return .red
+        case "blue": return .blue
+        case "green": return .green
+        case "yellow": return .yellow
+        case "orange": return .orange
+        case "purple": return .purple
+        case "pink": return .pink
+        case "indigo": return .indigo
+        case "teal": return .teal
+        case "mint": return .mint
+        case "cyan": return .cyan
+        default: return .blue
+        }
     }
 
     private func extractColor(from image: Image) {
@@ -411,20 +490,34 @@ struct EditFavoriteDetailView: View {
                         .fill(dominantColor)
                         .frame(width: 80, height: 80)
 
-                    AsyncImage(url: URL(string: favorite.faviconURL)) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: 48, height: 48)
+                    if favorite.faviconURL.hasPrefix("sf:") {
+                        let components = favorite.faviconURL.dropFirst(3).split(separator: ":")
+                        if components.count == 2 {
+                            let iconName = String(components[0])
+                            let colorName = String(components[1])
+                            Image(systemName: iconName)
+                                .font(.system(size: 40))
+                                .foregroundColor(colorFromString(colorName))
                                 .onAppear {
-                                    extractColor(from: image)
+                                    dominantColor = colorFromString(colorName).opacity(0.2)
                                 }
-                        default:
-                            Image(systemName: "globe")
-                                .font(.system(size: 36))
-                                .foregroundColor(.blue)
+                        }
+                    } else {
+                        AsyncImage(url: URL(string: favorite.faviconURL)) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 48, height: 48)
+                                    .onAppear {
+                                        extractColor(from: image)
+                                    }
+                            default:
+                                Image(systemName: "globe")
+                                    .font(.system(size: 36))
+                                    .foregroundColor(.blue)
+                            }
                         }
                     }
                 }
@@ -514,6 +607,23 @@ struct EditFavoriteDetailView: View {
                     }
                 }
             }
+        }
+    }
+
+    private func colorFromString(_ colorName: String) -> Color {
+        switch colorName.lowercased() {
+        case "red": return .red
+        case "blue": return .blue
+        case "green": return .green
+        case "yellow": return .yellow
+        case "orange": return .orange
+        case "purple": return .purple
+        case "pink": return .pink
+        case "indigo": return .indigo
+        case "teal": return .teal
+        case "mint": return .mint
+        case "cyan": return .cyan
+        default: return .blue
         }
     }
 

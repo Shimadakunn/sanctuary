@@ -43,6 +43,7 @@ struct ContentView: View {
                 )
             }
         }
+        .ignoresSafeArea(edges: .bottom)
         .statusBar(hidden: false)
     }
 }

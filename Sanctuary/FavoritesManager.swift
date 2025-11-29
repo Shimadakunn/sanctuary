@@ -38,14 +38,28 @@ class FavoritesManager: ObservableObject {
     }
 
     private func initializeDefaultFavorites() {
-        let defaults = [
-            ("YouTube", "https://m.youtube.com"),
-            ("Anime", "https://9animetv.to/home")
+        let defaults: [(title: String, url: String, icon: String, color: String)] = [
+            ("YouTube", "https://m.youtube.com", "play.rectangle.fill", "red"),
+            ("Movies/Shows", "https://www.cineby.gd/", "film.fill", "purple"),
+            ("Anime", "https://9animetv.to/home", "sparkles.tv.fill", "pink"),
+            ("Manga", "https://mangafire.to/home", "book.fill", "orange"),
+            ("Live Sports", "https://sportyhunter.com/", "sportscourt.fill", "green"),
+            ("Live TV", "https://tv.garden/", "tv.fill", "blue"),
+            ("eBooks", "https://z-lib.gd/", "books.vertical.fill", "indigo"),
+            ("Comics", "https://readcomicsonline.ru/", "text.book.closed.fill", "yellow"),
         ]
 
-        for (title, url) in defaults {
-            addFavorite(title: title, url: url)
+        for (title, url, icon, color) in defaults {
+            addDefaultFavorite(title: title, url: url, icon: icon, color: color)
         }
+    }
+
+    private func addDefaultFavorite(title: String, url: String, icon: String, color: String) {
+        let faviconURL = "sf:\(icon):\(color)"
+        let favorite = FavoriteWebsite(title: title, url: url, faviconURL: faviconURL)
+        favorites.append(favorite)
+        saveFavorites()
+        print("⭐ [Favorites] Added default: \(title) - Icon: \(icon) Color: \(color)")
     }
 
     func addFavorite(title: String, url: String) {

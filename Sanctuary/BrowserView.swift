@@ -20,6 +20,7 @@ struct BrowserView: View {
     @ObservedObject var historyManager: HistoryManager
 
     @State private var showAddFavoriteSheet = false
+    @State private var showMenuSheet = false
 
     var body: some View {
         ZStack {
@@ -55,11 +56,8 @@ struct BrowserView: View {
                     Spacer()
 
                     Button(action: {
-                        let currentURL = webViewStore.webView?.url?.absoluteString ?? ""
-                        if favoritesManager.isFavorite(url: currentURL) {
-                            favoritesManager.removeFavorite(url: currentURL)
-                        } else {
-                            showAddFavoriteSheet = true
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            showMenuSheet = true
                         }
                     }) {
                         ZStack {
@@ -67,39 +65,249 @@ struct BrowserView: View {
                                 .fill(Color.black.opacity(0.7))
                                 .frame(width: 50, height: 50)
 
-                            Image(systemName: favoritesManager.isFavorite(url: webViewStore.webView?.url?.absoluteString) ? "heart.fill" : "heart")
-                                .font(.system(size: 20, weight: .semibold))
-                                .foregroundColor(favoritesManager.isFavorite(url: webViewStore.webView?.url?.absoluteString) ? .red : .white)
-                        }
-                    }
-                    .sheet(isPresented: $showAddFavoriteSheet) {
-                        AddFavoriteView(
-                            initialTitle: title,
-                            url: webViewStore.webView?.url?.absoluteString ?? "",
-                            favoritesManager: favoritesManager,
-                            isPresented: $showAddFavoriteSheet
-                        )
-                    }
-
-                    Button(action: {
-                        print("🏠 [Home Button Pressed]")
-                        onGoHome()
-                    }) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.black.opacity(0.7))
-                                .frame(width: 50, height: 50)
-
-                            Image(systemName: "house.fill")
+                            Image(systemName: "ellipsis")
                                 .font(.system(size: 20, weight: .semibold))
                                 .foregroundColor(.white)
                         }
                     }
                     .padding(.trailing, 20)
                 }
-                .padding(.bottom, 40)
+                .padding(.bottom, 100)
+            }
+
+            if showMenuSheet {
+                Color.black.opacity(0.3)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            showMenuSheet = false
+                        }
+                    }
+                    .transition(.opacity)
+            }
+
+            if showMenuSheet {
+                VStack {
+                    Spacer()
+
+                    VStack(spacing: 0) {
+                        RoundedRectangle(cornerRadius: 2.5)
+                            .fill(Color.white.opacity(0.4))
+                            .frame(width: 40, height: 4)
+                            .padding(.top, 8)
+                            .padding(.bottom, 12)
+
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                showMenuSheet = false
+                            }
+                            if let url = webViewStore.webView?.url {
+                                let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+                                if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                                   let rootVC = windowScene.windows.first?.rootViewController {
+                                    rootVC.present(activityVC, animated: true)
+                                }
+                            }
+                        }) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "square.and.arrow.up")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(.white)
+                                    .frame(width: 24)
+
+                                Text("Share")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.white)
+
+                                Spacer()
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 12)
+                            .background(Color.black.opacity(0.001))
+                        }
+
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                showMenuSheet = false
+                            }
+                            webViewStore.webView?.reload()
+                        }) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(.white)
+                                    .frame(width: 24)
+
+                                Text("Reload")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.white)
+
+                                Spacer()
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 12)
+                            .background(Color.black.opacity(0.001))
+                        }
+
+                        Button(action: {
+                            let currentURL = webViewStore.webView?.url?.absoluteString ?? ""
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                if favoritesManager.isFavorite(url: currentURL) {
+                                    favoritesManager.removeFavorite(url: currentURL)
+                                    showMenuSheet = false
+                                } else {
+                                    showMenuSheet = false
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                        showAddFavoriteSheet = true
+                                    }
+                                }
+                            }
+                        }) {
+                            HStack(spacing: 12) {
+                                Image(systemName: favoritesManager.isFavorite(url: webViewStore.webView?.url?.absoluteString) ? "heart.fill" : "heart")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(favoritesManager.isFavorite(url: webViewStore.webView?.url?.absoluteString) ? .red : .white)
+                                    .frame(width: 24)
+
+                                Text(favoritesManager.isFavorite(url: webViewStore.webView?.url?.absoluteString) ? "Remove from Favorites" : "Add to Favorites")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.white)
+
+                                Spacer()
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 12)
+                            .background(Color.black.opacity(0.001))
+                        }
+
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                showMenuSheet = false
+                            }
+                            onGoHome()
+                        }) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "house.fill")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(.white)
+                                    .frame(width: 24)
+
+                                Text("Home")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.white)
+
+                                Spacer()
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 12)
+                            .background(Color.black.opacity(0.001))
+                        }
+
+                        Divider()
+                            .background(Color.white.opacity(0.3))
+                            .padding(.vertical, 8)
+
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                showMenuSheet = false
+                            }
+                        }) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "chevron.down")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(.white)
+                                    .frame(width: 24)
+
+                                Text("Hide")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.white)
+
+                                Spacer()
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 12)
+                            .background(Color.black.opacity(0.001))
+                        }
+                        .padding(.bottom, 20)
+                    }
+                    .background(Color.black.opacity(0.85))
+                    .cornerRadius(topRadius: 40, bottomRadius: 60)
+                    .padding(.horizontal, 4)
+                    .padding(.bottom, 4)
+                }
+                .transition(.move(edge: .bottom))
             }
         }
+        .sheet(isPresented: $showAddFavoriteSheet) {
+            AddFavoriteView(
+                initialTitle: title,
+                url: webViewStore.webView?.url?.absoluteString ?? "",
+                favoritesManager: favoritesManager,
+                isPresented: $showAddFavoriteSheet
+            )
+        }
+    }
+}
+
+extension View {
+    func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
+        clipShape(RoundedCorner(radius: radius, corners: corners))
+    }
+
+    func cornerRadius(topRadius: CGFloat, bottomRadius: CGFloat) -> some View {
+        clipShape(DifferentCornerRadius(topRadius: topRadius, bottomRadius: bottomRadius))
+    }
+}
+
+struct RoundedCorner: Shape {
+    var radius: CGFloat = .infinity
+    var corners: UIRectCorner = .allCorners
+
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath(roundedRect: rect, byRoundingCorners: corners, cornerRadii: CGSize(width: radius, height: radius))
+        return Path(path.cgPath)
+    }
+}
+
+struct DifferentCornerRadius: Shape {
+    var topRadius: CGFloat
+    var bottomRadius: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+
+        let topLeft = CGPoint(x: rect.minX, y: rect.minY + topRadius)
+        let topRight = CGPoint(x: rect.maxX, y: rect.minY + topRadius)
+        let bottomRight = CGPoint(x: rect.maxX, y: rect.maxY - bottomRadius)
+        let bottomLeft = CGPoint(x: rect.minX, y: rect.maxY - bottomRadius)
+
+        path.move(to: topLeft)
+        path.addArc(center: CGPoint(x: rect.minX + topRadius, y: rect.minY + topRadius),
+                    radius: topRadius,
+                    startAngle: .degrees(180),
+                    endAngle: .degrees(270),
+                    clockwise: false)
+        path.addLine(to: CGPoint(x: rect.maxX - topRadius, y: rect.minY))
+        path.addArc(center: CGPoint(x: rect.maxX - topRadius, y: rect.minY + topRadius),
+                    radius: topRadius,
+                    startAngle: .degrees(270),
+                    endAngle: .degrees(0),
+                    clockwise: false)
+        path.addLine(to: bottomRight)
+        path.addArc(center: CGPoint(x: rect.maxX - bottomRadius, y: rect.maxY - bottomRadius),
+                    radius: bottomRadius,
+                    startAngle: .degrees(0),
+                    endAngle: .degrees(90),
+                    clockwise: false)
+        path.addLine(to: CGPoint(x: rect.minX + bottomRadius, y: rect.maxY))
+        path.addArc(center: CGPoint(x: rect.minX + bottomRadius, y: rect.maxY - bottomRadius),
+                    radius: bottomRadius,
+                    startAngle: .degrees(90),
+                    endAngle: .degrees(180),
+                    clockwise: false)
+        path.closeSubpath()
+
+        return path
     }
 }
 
