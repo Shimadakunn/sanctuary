@@ -6,6 +6,8 @@
 //
 
 internal import SwiftUI
+import GoogleMobileAds
+import AppTrackingTransparency
 
 @main
 struct SanctuaryApp: App {
@@ -19,6 +21,22 @@ struct SanctuaryApp: App {
 }
 
 class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        // Initialize Google Mobile Ads SDK
+        MobileAds.shared.start(completionHandler: nil)
+
+        // Request App Tracking Transparency permission
+        if #available(iOS 14.5, *) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                ATTrackingManager.requestTrackingAuthorization { status in
+                    print("ATT Status: \(status.rawValue)")
+                }
+            }
+        }
+
+        return true
+    }
+
     func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
         guard let window = window else {
             print("🔄 [Orientation] Window is nil - returning .portrait")

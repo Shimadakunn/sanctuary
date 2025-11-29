@@ -7,6 +7,7 @@
 
 internal import SwiftUI
 import UIKit
+import GoogleMobileAds
 
 extension UIImage {
     func dominantColor() -> UIColor? {
@@ -81,6 +82,16 @@ struct HomePage: View {
                     .ignoresSafeArea()
 
                 VStack(spacing: 0) {
+                    Spacer()
+
+                    // AdMob Medium Rectangle Banner Ad
+                    AdMobBannerView(
+                        adUnitID: "ca-app-pub-3940256099942544/2435281174",  // Test ad unit
+                        adSize: AdSizeMediumRectangle
+                    )
+                    .frame(height: 250)
+                    .padding(.horizontal, 20)
+
                     Spacer()
 
                     // Favorites Grid
