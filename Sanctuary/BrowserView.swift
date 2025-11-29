@@ -330,6 +330,43 @@ struct WebViewWrapper: UIViewRepresentable {
         configuration.allowsInlineMediaPlayback = true
         configuration.mediaTypesRequiringUserActionForPlayback = []
 
+        // Add message handler for click tracking
+        configuration.userContentController.add(context.coordinator, name: "clickHandler")
+
+        // Inject JavaScript to track clicks and handle link navigation
+        let clickTrackerScript = """
+        document.addEventListener('click', function(event) {
+            const element = event.target;
+            const link = element.tagName === 'A' ? element : element.closest('a');
+
+            const clickInfo = {
+                tagName: element.tagName,
+                id: element.id || 'none',
+                className: element.className || 'none',
+                text: element.textContent?.substring(0, 50) || 'none',
+                href: element.href || link?.href || 'none',
+                x: event.clientX,
+                y: event.clientY,
+                isLink: !!link,
+                linkTarget: link?.target || 'none',
+                hasOnClick: !!(element.onclick || link?.onclick),
+                defaultPrevented: event.defaultPrevented
+            };
+
+            window.webkit.messageHandlers.clickHandler.postMessage(clickInfo);
+
+            // If it's a link with target="_blank" or similar, load it in the current window
+            if (link && link.href && link.target === '_blank') {
+                console.log('📎 Intercepting target="_blank" link:', link.href);
+                event.preventDefault();
+                window.location.href = link.href;
+            }
+        }, true);
+        """
+
+        let clickScript = WKUserScript(source: clickTrackerScript, injectionTime: .atDocumentEnd, forMainFrameOnly: false)
+        configuration.userContentController.addUserScript(clickScript)
+
         // Inject JavaScript to block pop-ups and ads
         let popupBlockerScript = """
         // Block window.open pop-ups
@@ -346,26 +383,194 @@ struct WebViewWrapper: UIViewRepresentable {
                 iframe[src*="a-ads"],
                 iframe[src*="ad."],
                 iframe[src*="/ad/"],
+                iframe[src*="/Ads/"],
                 iframe[src*="ads."],
                 iframe[src*="doubleclick"],
                 iframe[src*="googlesyndication"],
                 iframe[src*="advertising"],
+                iframe[src*="adskeeper"],
+                iframe[src*="mgid"],
+                iframe[src*="taboola"],
+                iframe[src*="outbrain"],
+                iframe[src*="revcontent"],
+                iframe[src*="contentabc"],
+                iframe[src*="propeller"],
+                iframe[src*="clickadu"],
+                iframe[src*="bid"],
+                iframe[src*="/banner"],
+                iframe[src*="adserver"],
+                iframe[sandbox*="allow-scripts"][src*="/"],
                 div[id*="ad-"],
                 div[class*="ad-"],
                 div[id*="_ad_"],
                 div[class*="_ad_"],
+                div[class*="mg-"],
+                div[id*="mg-"],
+                div[class*="mgline"],
+                div[id*="mgline"],
+                div[class*="adskeeper"],
+                div[id*="adskeeper"],
+                div[class*="taboola"],
+                div[id*="taboola"],
+                div[class*="outbrain"],
+                div[id*="outbrain"],
+                div[class*="sponsored"],
+                div[id*="sponsored"],
                 .advertisement,
                 .ad-container,
                 .ad-banner,
+                .ad-widget,
+                .ad-content,
+                .ads-wrapper,
+                .mgbox,
+                .mg-box,
+                .mgline,
+                .mg-line,
+                .adsbox,
+                .ad-placement,
+                .sponsored-content,
+                .native-ad,
                 [class*="AdSpace"],
-                [id*="AdSpace"] {
+                [id*="AdSpace"],
+                [class*="ad_wrapper"],
+                [id*="ad_wrapper"],
+                [data-ad],
+                [data-ad-slot],
+                ins.adsbygoogle,
+                .IL_AD,
+                .IL_INSEARCH,
+                .IL_RELATED,
+                .il_container,
+                .inlinks_container,
+                .infolinks-container,
+                span[class*="IL_"],
+                div[class*="IL_"],
+                a[href*="infolinks"],
+                a[href*="clk.htm"],
+                script[src*="infolinks"],
+                [data-il-target],
+                [data-infolinks],
+                .yrt-related,
+                .txt-lnk-ad,
+                .ilframe,
+                .il-ad-container {
                     display: none !important;
                     visibility: hidden !important;
                     width: 0 !important;
                     height: 0 !important;
+                    opacity: 0 !important;
+                    pointer-events: none !important;
                 }
             `;
             document.head.appendChild(style);
+
+            // Aggressively remove ad elements from the DOM
+            function removeAdElements() {
+                // Remove ad iframes
+                const adPatterns = ['/ads/', '/Ads/', 'bid', 'banner', 'adserver',
+                                   'adskeeper', 'mgid', 'taboola', 'outbrain',
+                                   'googlesyndication', 'doubleclick', 'advertising'];
+
+                const iframes = document.querySelectorAll('iframe');
+                iframes.forEach(iframe => {
+                    const src = iframe.getAttribute('src') || '';
+                    const lowerSrc = src.toLowerCase();
+
+                    for (const pattern of adPatterns) {
+                        if (lowerSrc.includes(pattern.toLowerCase())) {
+                            console.log('🗑️ Removing ad iframe:', src);
+                            iframe.remove();
+                            break;
+                        }
+                    }
+
+                    // Also remove iframes with sandbox attribute (common for ads)
+                    if (iframe.hasAttribute('sandbox') && src.includes('/')) {
+                        const sandbox = iframe.getAttribute('sandbox');
+                        if (sandbox.includes('allow-scripts')) {
+                            console.log('🗑️ Removing sandboxed iframe:', src);
+                            iframe.remove();
+                        }
+                    }
+                });
+
+                // Remove Infolinks elements
+                const infolinksSelectors = [
+                    '.IL_AD', '.IL_INSEARCH', '.IL_RELATED', '.il_container',
+                    '.inlinks_container', '.infolinks-container', 'span[class*="IL_"]',
+                    'div[class*="IL_"]', 'a[href*="infolinks"]', 'a[href*="clk.htm"]',
+                    '[data-il-target]', '[data-infolinks]', '.txt-lnk-ad', '.ilframe'
+                ];
+
+                infolinksSelectors.forEach(selector => {
+                    document.querySelectorAll(selector).forEach(el => {
+                        console.log('🗑️ Removing Infolinks element:', selector);
+                        el.remove();
+                    });
+                });
+
+                // Remove Infolinks scripts
+                document.querySelectorAll('script[src*="infolinks"]').forEach(script => {
+                    console.log('🗑️ Removing Infolinks script');
+                    script.remove();
+                });
+
+                // Remove any links with ad tracking patterns
+                document.querySelectorAll('a').forEach(link => {
+                    const href = link.getAttribute('href') || '';
+                    if (href.includes('clk.htm') || href.includes('infolinks.com') ||
+                        href.includes('adskeeper') || href.includes('mgid.com')) {
+                        console.log('🗑️ Removing ad link:', href);
+                        link.remove();
+                    }
+                });
+            }
+
+            // Run immediately and on DOM changes
+            removeAdElements();
+            setInterval(removeAdElements, 500);
+
+            const observer = new MutationObserver(() => {
+                removeAdElements();
+            });
+            observer.observe(document.documentElement, { childList: true, subtree: true });
+        })();
+
+        // Block ad scripts from loading
+        (function() {
+            const originalAppendChild = Node.prototype.appendChild;
+            const originalInsertBefore = Node.prototype.insertBefore;
+
+            function shouldBlockElement(element) {
+                if (element.tagName === 'SCRIPT') {
+                    const src = element.src || element.getAttribute('src') || '';
+                    const adScriptPatterns = ['infolinks', 'adskeeper', 'mgid', 'taboola',
+                                             'outbrain', 'googlesyndication', 'doubleclick',
+                                             'advertising', 'adserver', 'propeller', 'clickadu'];
+
+                    for (const pattern of adScriptPatterns) {
+                        if (src.toLowerCase().includes(pattern)) {
+                            console.log('🚫 Blocked ad script:', src);
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
+            Node.prototype.appendChild = function(element) {
+                if (shouldBlockElement(element)) {
+                    return element;
+                }
+                return originalAppendChild.call(this, element);
+            };
+
+            Node.prototype.insertBefore = function(element, reference) {
+                if (shouldBlockElement(element)) {
+                    return element;
+                }
+                return originalInsertBefore.call(this, element, reference);
+            };
         })();
 
         // Block common ad insertion methods
@@ -373,7 +578,7 @@ struct WebViewWrapper: UIViewRepresentable {
             // Store original methods
             const originalCreateElement = document.createElement;
 
-            // Override createElement to block ad iframes
+            // Override createElement to block ad iframes and scripts
             document.createElement = function(tagName) {
                 const element = originalCreateElement.call(document, tagName);
 
@@ -385,8 +590,15 @@ struct WebViewWrapper: UIViewRepresentable {
                             const adPatterns = [
                                 'ad', 'banner', 'popup', 'tracker',
                                 'doubleclick', 'googlesyndication',
-                                'infolinks', 'a-ads', '/ads/',
-                                'advertising', 'adservice'
+                                'infolinks', 'a-ads', '/ads/', '/Ads/',
+                                'advertising', 'adservice', 'adskeeper',
+                                'mgid', 'taboola', 'outbrain',
+                                'revcontent', 'propeller', 'clickadu',
+                                'adsterra', 'exoclick', 'popads',
+                                'popcash', 'criteo', 'pubmatic',
+                                'rubiconproject', 'openx', 'sponsored',
+                                'native-ad', 'mgline', 'mgbox', 'bid',
+                                'adserver', 'advert', '/banner'
                             ];
                             const lowerValue = value.toLowerCase();
 
@@ -453,7 +665,7 @@ struct WebViewWrapper: UIViewRepresentable {
         Coordinator(self)
     }
 
-    class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
+    class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
         var parent: WebViewWrapper
         var currentURL: URL?
 
@@ -475,7 +687,21 @@ struct WebViewWrapper: UIViewRepresentable {
             "usync",
             "/action/clk",
             "ad-click",
-            "adclick"
+            "adclick",
+            "ghits",
+            "clck.",
+            "adskeeper",
+            "mgline",
+            "ads-click",
+            "adserve",
+            "adserver",
+            "/ads/",
+            "outbrain",
+            "taboola",
+            "sponsored",
+            "popup",
+            "popunder",
+            "interstitial"
         ]
 
         init(_ parent: WebViewWrapper) {
@@ -500,7 +726,7 @@ struct WebViewWrapper: UIViewRepresentable {
         }
 
         func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-            print("🔍 [Navigation Policy] Type: \(navigationAction.navigationType.rawValue), URL: \(navigationAction.request.url?.absoluteString ?? "nil"), SourceFrame: \(navigationAction.sourceFrame.request.url?.absoluteString ?? "nil")")
+            print("🔍 [Navigation Policy] Type: \(navigationAction.navigationType.rawValue), URL: \(navigationAction.request.url?.absoluteString ?? "nil"), TargetFrame: \(navigationAction.targetFrame != nil ? "present" : "nil"), SourceFrame: \(navigationAction.sourceFrame.request.url?.absoluteString ?? "nil")")
 
             // Always allow user-initiated back/forward navigation
             if navigationAction.navigationType == .backForward {
@@ -512,20 +738,33 @@ struct WebViewWrapper: UIViewRepresentable {
             // Always allow about:blank (used by many sites for internal operations)
             if let targetURL = navigationAction.request.url,
                targetURL.absoluteString == "about:blank" {
+                print("✅ [Navigation Allowed] about:blank")
                 decisionHandler(.allow)
                 return
             }
 
             guard let targetURL = navigationAction.request.url else {
+                print("🚫 [Navigation Blocked] No target URL")
                 decisionHandler(.cancel)
                 return
             }
 
-            // BLOCK POP-UPS: Block navigation if it's trying to open in a new window/frame
+            // HANDLE NEW WINDOW/TAB REQUESTS: Instead of blocking, load in current frame
             if navigationAction.targetFrame == nil {
-                print("🚫 [Pop-up Blocked] New window/frame blocked: \(targetURL.absoluteString)")
-                decisionHandler(.cancel)
-                return
+                // Check if this is likely an ad/malicious pop-up or a legitimate link
+                let isLikelyAd = isAdDomain(targetURL) || hasSuspiciousPattern(targetURL)
+
+                if isLikelyAd {
+                    print("🚫 [Pop-up Blocked] Ad/malicious pop-up blocked: \(targetURL.absoluteString)")
+                    decisionHandler(.cancel)
+                    return
+                } else {
+                    // Load legitimate links in the current frame instead of blocking
+                    print("🔄 [Pop-up Redirected] Loading in current frame: \(targetURL.absoluteString)")
+                    webView.load(URLRequest(url: targetURL))
+                    decisionHandler(.cancel)
+                    return
+                }
             }
 
             // BLOCK AD DOMAINS: Block known ad/tracking domains
@@ -578,6 +817,7 @@ struct WebViewWrapper: UIViewRepresentable {
                 }
             }
 
+            print("✅ [Navigation Allowed] URL: \(targetURL.absoluteString)")
             decisionHandler(.allow)
         }
 
@@ -661,6 +901,28 @@ struct WebViewWrapper: UIViewRepresentable {
         func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (String?) -> Void) {
             print("🚫 [Text Input Dialog Blocked] Prompt: \(prompt)")
             completionHandler(nil)
+        }
+
+        // MARK: - WKScriptMessageHandler (Click tracking)
+
+        func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+            if message.name == "clickHandler", let clickInfo = message.body as? [String: Any] {
+                let tagName = clickInfo["tagName"] as? String ?? "unknown"
+                let id = clickInfo["id"] as? String ?? "none"
+                let className = clickInfo["className"] as? String ?? "none"
+                let text = clickInfo["text"] as? String ?? "none"
+                let href = clickInfo["href"] as? String ?? "none"
+                let x = clickInfo["x"] as? Double ?? 0
+                let y = clickInfo["y"] as? Double ?? 0
+                let isLink = clickInfo["isLink"] as? Bool ?? false
+                let linkTarget = clickInfo["linkTarget"] as? String ?? "none"
+                let hasOnClick = clickInfo["hasOnClick"] as? Bool ?? false
+                let defaultPrevented = clickInfo["defaultPrevented"] as? Bool ?? false
+
+                print("👆 [User Click] Tag: <\(tagName)>, Link: \(isLink ? "YES" : "NO"), Target: \(linkTarget), OnClick: \(hasOnClick ? "YES" : "NO"), DefaultPrevented: \(defaultPrevented ? "YES" : "NO")")
+                print("   ↳ ID: \(id), Class: \(className), Text: \"\(text)\"")
+                print("   ↳ URL: \(href), Position: (\(Int(x)), \(Int(y)))")
+            }
         }
     }
 }
