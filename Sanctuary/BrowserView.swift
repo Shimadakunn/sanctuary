@@ -457,34 +457,8 @@ struct WebViewWrapper: UIViewRepresentable {
         var parent: WebViewWrapper
         var currentURL: URL?
 
-        // Ad blocking domains list
-        private let adDomains: Set<String> = [
-            "freedomnetvpn.com",
-            "vpn-site.com",
-            "click.vpn-site.com",
-            "doubleclick.net",
-            "googlesyndication.com",
-            "googleadservices.com",
-            "adservice.google.com",
-            "advertising.com",
-            "ad.doubleclick.net",
-            "ads.google.com",
-            "clickadu.com",
-            "propellerads.com",
-            "popads.net",
-            "popcash.net",
-            "adsterra.com",
-            "exoclick.com",
-            "juicyads.com",
-            "trafficjunky.com",
-            "outbrain.com",
-            "taboola.com",
-            "infolinks.com",
-            "router.infolinks.com",
-            "resources.infolinks.com",
-            "a-ads.com",
-            "ad.a-ads.com"
-        ]
+        // Reference to the shared AdBlockManager
+        private let adBlockManager = AdBlockManager.shared
 
         // Suspicious URL patterns (for tracking/ad redirects)
         private let suspiciousPatterns = [
@@ -509,16 +483,7 @@ struct WebViewWrapper: UIViewRepresentable {
         }
 
         private func isAdDomain(_ url: URL) -> Bool {
-            guard let host = url.host?.lowercased() else { return false }
-
-            // Check if the host matches any ad domain
-            for adDomain in adDomains {
-                if host == adDomain || host.hasSuffix("." + adDomain) {
-                    return true
-                }
-            }
-
-            return false
+            return adBlockManager.isBlocked(url: url)
         }
 
         private func hasSuspiciousPattern(_ url: URL) -> Bool {

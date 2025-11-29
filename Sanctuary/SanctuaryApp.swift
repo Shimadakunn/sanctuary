@@ -25,6 +25,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         // Initialize Google Mobile Ads SDK
         MobileAds.shared.start(completionHandler: nil)
 
+        // Initialize AdBlockManager to start loading/caching filter lists
+        _ = AdBlockManager.shared
+
         // Request App Tracking Transparency permission
         if #available(iOS 14.5, *) {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
