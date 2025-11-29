@@ -124,7 +124,7 @@ struct HomePage: View {
 
                     SearchBar(text: $searchText, onSubmit: onSubmit)
                         .padding(.horizontal, 20)
-                        .padding(.bottom, 40)
+                        .padding(.bottom, 8)
                 }
                 .navigationDestination(isPresented: $showManageView) {
                     ManageFavoritesView(favoritesManager: favoritesManager, isPresented: $showManageView) { url in
