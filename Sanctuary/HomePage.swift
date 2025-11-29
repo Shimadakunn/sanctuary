@@ -71,6 +71,8 @@ struct HomePage: View {
 
     @State private var showManageView = false
     @State private var showHistoryView = false
+    @State private var showFilesView = false
+    @State private var showSettingsView = false
 
     var body: some View {
         NavigationStack {
@@ -112,11 +114,11 @@ struct HomePage: View {
                         }
 
                         ActionButton(icon: "folder.fill", title: "Files") {
-                            // To be implemented
+                            showFilesView = true
                         }
 
                         ActionButton(icon: "gearshape.fill", title: "Settings") {
-                            // To be implemented
+                            showSettingsView = true
                         }
                     }
                     .padding(.horizontal)
@@ -137,6 +139,12 @@ struct HomePage: View {
                         showHistoryView = false
                         onQuickAccess(url)
                     }
+                }
+                .navigationDestination(isPresented: $showFilesView) {
+                    FilesView()
+                }
+                .navigationDestination(isPresented: $showSettingsView) {
+                    SettingsView(favoritesManager: favoritesManager)
                 }
             }
         }
@@ -681,38 +689,57 @@ struct QuickAccessTile: View {
     }
 }
 
-struct SearchBar: View {
+struct SearchBar: UIViewRepresentable {
     @Binding var text: String
     let onSubmit: () -> Void
 
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "magnifyingglass")
-                .foregroundColor(.secondary)
-                .font(.system(size: 18))
+    func makeUIView(context: Context) -> UISearchBar {
+        let searchBar = UISearchBar(frame: .zero)
+        searchBar.delegate = context.coordinator
+        searchBar.placeholder = "Search or enter website"
+        searchBar.autocapitalizationType = .none
+        searchBar.autocorrectionType = .no
+        searchBar.keyboardType = .webSearch
+        searchBar.returnKeyType = .go
+        searchBar.searchBarStyle = .minimal
+        searchBar.enablesReturnKeyAutomatically = false
+        searchBar.showsCancelButton = false
+        return searchBar
+    }
 
-            TextField("Search or enter website", text: $text)
-                .textFieldStyle(PlainTextFieldStyle())
-                .autocapitalization(.none)
-                .disableAutocorrection(true)
-                .keyboardType(.webSearch)
-                .submitLabel(.go)
-                .onSubmit(onSubmit)
+    func updateUIView(_ searchBar: UISearchBar, context: Context) {
+        searchBar.text = text
+    }
 
-            if !text.isEmpty {
-                Button(action: { text = "" }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(.secondary)
-                        .font(.system(size: 18))
-                }
-            }
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    class Coordinator: NSObject, UISearchBarDelegate {
+        let parent: SearchBar
+
+        init(_ parent: SearchBar) {
+            self.parent = parent
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(UIColor.secondarySystemGroupedBackground))
-        )
+
+        func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+            parent.text = searchText
+        }
+
+        func searchBarTextDidBeginEditing(_ searchBar: UISearchBar) {
+            searchBar.setShowsCancelButton(true, animated: true)
+        }
+
+        func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+            parent.onSubmit()
+            searchBar.setShowsCancelButton(false, animated: true)
+            searchBar.resignFirstResponder()
+        }
+
+        func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
+            searchBar.setShowsCancelButton(false, animated: true)
+            searchBar.resignFirstResponder()
+        }
     }
 }
 
@@ -747,43 +774,65 @@ struct ActionButton: View {
 struct HistoryView: View {
     @ObservedObject var historyManager: HistoryManager
     let onVisit: (String) -> Void
+    @State private var searchText: String = ""
+
+    private var filteredHistory: [(String, [HistoryItem])] {
+        let grouped = historyManager.groupedHistory()
+
+        if searchText.isEmpty {
+            return grouped
+        }
+
+        return grouped.compactMap { section in
+            let filteredItems = section.1.filter { item in
+                item.title.localizedCaseInsensitiveContains(searchText) ||
+                item.url.localizedCaseInsensitiveContains(searchText)
+            }
+            return filteredItems.isEmpty ? nil : (section.0, filteredItems)
+        }
+    }
 
     var body: some View {
-        List {
-            let grouped = historyManager.groupedHistory()
-
-            if grouped.isEmpty {
-                VStack(spacing: 16) {
-                    Image(systemName: "clock")
-                        .font(.system(size: 64))
-                        .foregroundColor(.gray.opacity(0.5))
-                    Text("No History Yet")
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundColor(.secondary)
-                    Text("Sites you visit will appear here")
-                        .font(.system(size: 14))
-                        .foregroundColor(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.top, 100)
-                .listRowBackground(Color.clear)
-            } else {
-                ForEach(grouped, id: \.0) { section in
-                    Section(header: Text(section.0)) {
-                        ForEach(section.1) { item in
-                            HistoryRow(item: item) {
-                                onVisit(item.url)
+        VStack(spacing: 0) {
+            List {
+                if filteredHistory.isEmpty {
+                    VStack(spacing: 16) {
+                        Image(systemName: searchText.isEmpty ? "clock" : "magnifyingglass")
+                            .font(.system(size: 64))
+                            .foregroundColor(.gray.opacity(0.5))
+                        Text(searchText.isEmpty ? "No History Yet" : "No Results")
+                            .font(.system(size: 20, weight: .medium))
+                            .foregroundColor(.secondary)
+                        Text(searchText.isEmpty ? "Sites you visit will appear here" : "Try a different search term")
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 100)
+                    .listRowBackground(Color.clear)
+                } else {
+                    ForEach(filteredHistory, id: \.0) { section in
+                        Section(header: Text(section.0)) {
+                            ForEach(section.1) { item in
+                                HistoryRow(item: item) {
+                                    onVisit(item.url)
+                                }
                             }
-                        }
-                        .onDelete { indexSet in
-                            indexSet.forEach { index in
-                                let item = section.1[index]
-                                historyManager.removeHistoryItem(id: item.id)
+                            .onDelete { indexSet in
+                                indexSet.forEach { index in
+                                    let item = section.1[index]
+                                    historyManager.removeHistoryItem(id: item.id)
+                                }
                             }
                         }
                     }
                 }
             }
+            .listStyle(.insetGrouped)
+
+            SearchBar(text: $searchText, onSubmit: {})
+                .padding(.horizontal, 20)
+                .padding(.bottom, 8)
         }
         .navigationTitle("History")
         .navigationBarTitleDisplayMode(.inline)
@@ -832,7 +881,7 @@ struct HistoryRow: View {
                 }
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(item.title)
+                    Text(item.title.isEmpty ? (URL(string: item.url)?.host ?? item.url) : item.title)
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.primary)
                         .lineLimit(1)

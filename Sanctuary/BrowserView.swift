@@ -416,9 +416,10 @@ struct WebViewWrapper: UIViewRepresentable {
             currentURL = webView.url
 
             // Add to history
-            if let url = webView.url?.absoluteString,
-               let title = webView.title ?? webView.url?.host {
-                parent.historyManager.addHistoryItem(title: title, url: url)
+            if let url = webView.url?.absoluteString {
+                let pageTitle = webView.title?.isEmpty == false ? webView.title : webView.url?.host
+                let finalTitle = pageTitle ?? url
+                parent.historyManager.addHistoryItem(title: finalTitle, url: url)
             }
 
             print("✅ [Navigation Finish] URL: \(webView.url?.absoluteString ?? "nil"), CanGoBack: \(webView.canGoBack)")
@@ -428,9 +429,10 @@ struct WebViewWrapper: UIViewRepresentable {
             parent.canGoBack = webView.canGoBack
 
             // Also track in didCommit to catch client-side navigation (like YouTube videos)
-            if let url = webView.url?.absoluteString,
-               let title = webView.title ?? webView.url?.host {
-                parent.historyManager.addHistoryItem(title: title, url: url)
+            if let url = webView.url?.absoluteString {
+                let pageTitle = webView.title?.isEmpty == false ? webView.title : webView.url?.host
+                let finalTitle = pageTitle ?? url
+                parent.historyManager.addHistoryItem(title: finalTitle, url: url)
             }
 
             print("📝 [Navigation Commit] URL: \(webView.url?.absoluteString ?? "nil"), CanGoBack: \(webView.canGoBack)")
