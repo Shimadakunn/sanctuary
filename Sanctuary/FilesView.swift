@@ -25,7 +25,7 @@ struct FilesView: View {
                 VStack(spacing: 16) {
                     Image(systemName: "folder")
                         .font(.system(size: 64))
-                        .foregroundColor(.gray.opacity(0.5))
+                        .foregroundColor(.secondary.opacity(0.5))
                     Text("No Files")
                         .font(.system(size: 20, weight: .medium))
                         .foregroundColor(.secondary)
@@ -276,7 +276,7 @@ struct FilePreviewView: View {
                         InfoRow(label: "Location", value: file.url.deletingLastPathComponent().path)
                     }
                     .padding()
-                    .background(Color(UIColor.secondarySystemGroupedBackground))
+                    .background(Color.adaptiveSecondaryBackground)
                     .cornerRadius(12)
                     .padding(.horizontal)
 

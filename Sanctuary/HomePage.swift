@@ -77,7 +77,7 @@ struct HomePage: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(UIColor.systemGroupedBackground)
+                Color.adaptiveGroupedBackground
                     .ignoresSafeArea()
 
                 VStack(spacing: 0) {
@@ -555,7 +555,7 @@ struct EditFavoriteDetailView: View {
                         .padding(.vertical, 8)
                         .background(
                             RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                .stroke(Color.border, lineWidth: 1)
                         )
                     }
 
@@ -583,7 +583,7 @@ struct EditFavoriteDetailView: View {
                         .padding(.vertical, 8)
                         .background(
                             RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                .stroke(Color.border, lineWidth: 1)
                         )
                     }
                 }
@@ -753,12 +753,12 @@ struct ActionButton: View {
             VStack(spacing: 8) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.gray.opacity(0.4), lineWidth: 2)
+                        .stroke(Color.border, lineWidth: 2)
                         .frame(width: 60, height: 60)
 
                     Image(systemName: icon)
                         .font(.system(size: 24))
-                        .foregroundColor(.gray)
+                        .foregroundColor(.secondary)
                 }
 
                 Text(title)

@@ -15,7 +15,7 @@ struct AppLockView: View {
 
     var body: some View {
         ZStack {
-            Color.black.opacity(0.5)
+            Color.overlayDim
                 .ignoresSafeArea()
 
             VStack {

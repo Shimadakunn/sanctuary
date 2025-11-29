@@ -43,7 +43,7 @@ struct BrowserView: View {
                     }) {
                         ZStack {
                             Circle()
-                                .fill(Color.black.opacity(0.7))
+                                .fill(Color.buttonOverlay)
                                 .frame(width: 50, height: 50)
 
                             Image(systemName: "chevron.left")
@@ -62,7 +62,7 @@ struct BrowserView: View {
                     }) {
                         ZStack {
                             Circle()
-                                .fill(Color.black.opacity(0.7))
+                                .fill(Color.buttonOverlay)
                                 .frame(width: 50, height: 50)
 
                             Image(systemName: "ellipsis")
@@ -76,7 +76,7 @@ struct BrowserView: View {
             }
 
             if showMenuSheet {
-                Color.black.opacity(0.3)
+                Color.overlayDim
                     .ignoresSafeArea()
                     .onTapGesture {
                         withAnimation(.easeInOut(duration: 0.3)) {
@@ -92,7 +92,7 @@ struct BrowserView: View {
 
                     VStack(spacing: 0) {
                         RoundedRectangle(cornerRadius: 2.5)
-                            .fill(Color.white.opacity(0.4))
+                            .fill(Color.adaptiveSecondaryLabel.opacity(0.4))
                             .frame(width: 40, height: 4)
                             .padding(.top, 8)
                             .padding(.bottom, 12)
@@ -112,18 +112,18 @@ struct BrowserView: View {
                             HStack(spacing: 12) {
                                 Image(systemName: "square.and.arrow.up")
                                     .font(.system(size: 18))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(.primary)
                                     .frame(width: 24)
 
                                 Text("Share")
                                     .font(.system(size: 16))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(.primary)
 
                                 Spacer()
                             }
                             .padding(.horizontal, 20)
                             .padding(.vertical, 12)
-                            .background(Color.black.opacity(0.001))
+                            .background(Color.clear)
                         }
 
                         Button(action: {
@@ -135,18 +135,18 @@ struct BrowserView: View {
                             HStack(spacing: 12) {
                                 Image(systemName: "arrow.clockwise")
                                     .font(.system(size: 18))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(.primary)
                                     .frame(width: 24)
 
                                 Text("Reload")
                                     .font(.system(size: 16))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(.primary)
 
                                 Spacer()
                             }
                             .padding(.horizontal, 20)
                             .padding(.vertical, 12)
-                            .background(Color.black.opacity(0.001))
+                            .background(Color.clear)
                         }
 
                         Button(action: {
@@ -166,18 +166,18 @@ struct BrowserView: View {
                             HStack(spacing: 12) {
                                 Image(systemName: favoritesManager.isFavorite(url: webViewStore.webView?.url?.absoluteString) ? "heart.fill" : "heart")
                                     .font(.system(size: 18))
-                                    .foregroundColor(favoritesManager.isFavorite(url: webViewStore.webView?.url?.absoluteString) ? .red : .white)
+                                    .foregroundColor(favoritesManager.isFavorite(url: webViewStore.webView?.url?.absoluteString) ? .red : .primary)
                                     .frame(width: 24)
 
                                 Text(favoritesManager.isFavorite(url: webViewStore.webView?.url?.absoluteString) ? "Remove from Favorites" : "Add to Favorites")
                                     .font(.system(size: 16))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(.primary)
 
                                 Spacer()
                             }
                             .padding(.horizontal, 20)
                             .padding(.vertical, 12)
-                            .background(Color.black.opacity(0.001))
+                            .background(Color.clear)
                         }
 
                         Button(action: {
@@ -189,22 +189,22 @@ struct BrowserView: View {
                             HStack(spacing: 12) {
                                 Image(systemName: "house.fill")
                                     .font(.system(size: 18))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(.primary)
                                     .frame(width: 24)
 
                                 Text("Home")
                                     .font(.system(size: 16))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(.primary)
 
                                 Spacer()
                             }
                             .padding(.horizontal, 20)
                             .padding(.vertical, 12)
-                            .background(Color.black.opacity(0.001))
+                            .background(Color.clear)
                         }
 
                         Divider()
-                            .background(Color.white.opacity(0.3))
+                            .background(Color.secondary.opacity(0.3))
                             .padding(.vertical, 8)
 
                         Button(action: {
@@ -215,22 +215,22 @@ struct BrowserView: View {
                             HStack(spacing: 12) {
                                 Image(systemName: "chevron.down")
                                     .font(.system(size: 18))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(.primary)
                                     .frame(width: 24)
 
                                 Text("Hide")
                                     .font(.system(size: 16))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(.primary)
 
                                 Spacer()
                             }
                             .padding(.horizontal, 20)
                             .padding(.vertical, 12)
-                            .background(Color.black.opacity(0.001))
+                            .background(Color.clear)
                         }
                         .padding(.bottom, 20)
                     }
-                    .background(Color.black.opacity(0.85))
+                    .background(Color.sheetBackground)
                     .cornerRadius(topRadius: 40, bottomRadius: 60)
                     .padding(.horizontal, 4)
                     .padding(.bottom, 4)
