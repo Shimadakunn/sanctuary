@@ -90,7 +90,9 @@ class DownloadManager: ObservableObject {
             throw URLError(.badURL)
         }
 
-        print("✅ [iOS] Received direct link: \(directDownloadURL.host ?? "unknown")")
+        print("✅ [iOS] Received direct link from backend")
+        print("   🔗 URL: \(directDownloadURL.absoluteString)")
+        print("   📄 Title: \(videoInfo.title ?? "Unknown")")
 
         // 2. Download the actual file from the direct link
         print("⬇️ [iOS] Starting file download...")
@@ -104,10 +106,12 @@ class DownloadManager: ObservableObject {
             let contentType = httpDownloadResponse.value(forHTTPHeaderField: "Content-Type")
             actualFileExtension = getFileExtension(fromContentType: contentType)
 
-            print("📥 [iOS] File download status: \(httpDownloadResponse.statusCode)")
+            print("📥 [iOS] Download Response Headers:")
+            print("   Status: \(httpDownloadResponse.statusCode)")
             print("   Content-Type: \(contentType ?? "unknown")")
+            print("   Content-Length: \(httpDownloadResponse.expectedContentLength) bytes")
+            print("   Suggested Filename: \(httpDownloadResponse.suggestedFilename ?? "none")")
             print("   Deduced Extension: \(actualFileExtension)")
-            print("   Size: \(httpDownloadResponse.expectedContentLength) bytes")
             
             guard httpDownloadResponse.statusCode == 200 else {
                 throw URLError(.badServerResponse)

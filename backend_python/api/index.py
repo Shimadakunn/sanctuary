@@ -45,13 +45,13 @@ def get_download_link(request: DownloadRequest):
 
         # Configure yt-dlp options
         ydl_opts = {
-            'quiet': True,
+            'quiet': True, # We will manually print formats
             'no_warnings': True,
-            # Prioritize known progressive MP4 formats (22=720p, 18=360p)
-            # Then try any mp4 with audio that isn't m3u8
-            # Fallback to best only as a last resort
-            'format': '22/18/best[ext=mp4][acodec!=none][protocol!*=m3u8]/best',
-            'verbose': True, # Enable verbose logging to debug auth issues
+            # STRICTLY require a direct HTTP/HTTPS link.
+            # We cannot handle m3u8 (HLS) or dash because the iOS app simply downloads the URL.
+            # Downloading an m3u8 URL just saves the text playlist, not the video content.
+            'format': '(best[ext=mp4]/best)[protocol^=http]',
+            'verbose': True, 
         }
         
         if temp_cookie_file:
@@ -60,21 +60,33 @@ def get_download_link(request: DownloadRequest):
         if request.format == 'mp3':
              ydl_opts['format'] = 'bestaudio/best'
         elif request.quality:
-            # Note: High qualities like 1080p usually require merging (ffmpeg), which we can't do.
-            # We'll try to find the best single file available.
             if request.quality == '1080p':
-                ydl_opts['format'] = 'best[height=1080][ext=mp4][acodec!=none]/22/18/best'
+                ydl_opts['format'] = '(best[height=1080][ext=mp4]/best)[protocol^=http]'
             elif request.quality == '720p':
-                ydl_opts['format'] = '22/best[height=720][ext=mp4][acodec!=none]/18/best'
+                ydl_opts['format'] = '(best[height=720][ext=mp4]/best)[protocol^=http]'
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(request.url, download=False)
             
+            # DEBUG: Print all available formats to help diagnose missing progressive streams
+            if 'formats' in info:
+                print(f"\n🔎 Available Formats for '{info.get('title', 'Unknown')}':")
+                print(f"{'ID':<5} {'EXT':<5} {'RES':<10} {'PROTO':<10} {'NOTE'}")
+                print("-" * 50)
+                for f in info['formats']:
+                    f_id = f.get('format_id', 'N/A')
+                    f_ext = f.get('ext', 'N/A')
+                    f_res = f.get('resolution', 'N/A')
+                    f_proto = f.get('protocol', 'N/A')
+                    f_note = f.get('format_note', '')
+                    print(f"{f_id:<5} {f_ext:<5} {f_res:<10} {f_proto:<10} {f_note}")
+                print("-" * 50 + "\n")
+
             if 'entries' in info:
                 info = info['entries'][0]
 
             # Debug logging for selected format
-            print(f"ℹ️ Selected format: {info.get('format_id')} ({info.get('ext')}) - Protocol: {info.get('protocol')}")
+            print(f"✅ Selected format: ID={info.get('format_id')} Ext={info.get('ext')} Proto={info.get('protocol')} Res={info.get('resolution')}")
 
             video_url = info.get('url')
             title = info.get('title')
