@@ -18,9 +18,8 @@ class DownloadManager: ObservableObject {
         print("📋 [iOS] Requested format: \(format)")
         print("📋 [iOS] Filename: \(filename)")
 
-        // Assuming the backend is running on localhost:3000
-        // Use localhost directly. Ensure NSAppTransportSecurity allows it.
-        guard let apiUrl = URL(string: "https://sanctuary-pksz.vercel.app/download") else {
+        // Use the production server URL
+        guard let apiUrl = URL(string: "http://localhost:3000/download") else {
             throw URLError(.badURL)
         }
 
@@ -32,13 +31,15 @@ class DownloadManager: ObservableObject {
         let body: [String: Any] = [
             "url": url.absoluteString,
             "format": format,
-            "quality": "best"
+            "quality": "best",
+            "title": filename
         ]
 
         print("📤 [iOS] Sending request to backend:")
         print("   URL: \(url.absoluteString)")
         print("   Format: \(format)")
         print("   Quality: best")
+        print("   Title: \(filename)")
 
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
