@@ -47,8 +47,10 @@ def get_download_link(request: DownloadRequest):
         ydl_opts = {
             'quiet': True,
             'no_warnings': True,
-            # Prioritize progressive MP4s (video+audio in one file) for direct download compatibility
-            'format': 'best[ext=mp4][acodec!=none]/best[ext=mp4]/best',
+            # Prioritize known progressive MP4 formats (22=720p, 18=360p)
+            # Then try any mp4 with audio that isn't m3u8
+            # Fallback to best only as a last resort
+            'format': '22/18/best[ext=mp4][acodec!=none][protocol!*=m3u8]/best',
             'verbose': True, # Enable verbose logging to debug auth issues
         }
         
@@ -58,16 +60,21 @@ def get_download_link(request: DownloadRequest):
         if request.format == 'mp3':
              ydl_opts['format'] = 'bestaudio/best'
         elif request.quality:
+            # Note: High qualities like 1080p usually require merging (ffmpeg), which we can't do.
+            # We'll try to find the best single file available.
             if request.quality == '1080p':
-                ydl_opts['format'] = 'best[height=1080][ext=mp4]/best[height>=720][ext=mp4]/best'
+                ydl_opts['format'] = 'best[height=1080][ext=mp4][acodec!=none]/22/18/best'
             elif request.quality == '720p':
-                ydl_opts['format'] = 'best[height=720][ext=mp4]/best'
+                ydl_opts['format'] = '22/best[height=720][ext=mp4][acodec!=none]/18/best'
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(request.url, download=False)
             
             if 'entries' in info:
                 info = info['entries'][0]
+
+            # Debug logging for selected format
+            print(f"ℹ️ Selected format: {info.get('format_id')} ({info.get('ext')}) - Protocol: {info.get('protocol')}")
 
             video_url = info.get('url')
             title = info.get('title')
