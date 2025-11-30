@@ -20,7 +20,7 @@ class DownloadManager: ObservableObject {
 
         // Assuming the backend is running on localhost:3000
         // Use localhost directly. Ensure NSAppTransportSecurity allows it.
-        guard let apiUrl = URL(string: "http://localhost:3000/api/download") else {
+        guard let apiUrl = URL(string: "http://localhost:3000/download") else {
             throw URLError(.badURL)
         }
 

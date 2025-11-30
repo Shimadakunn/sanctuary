@@ -1,0 +1,24 @@
+{
+  "name": "backend2",
+  "module": "src/index.ts",
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "dev": "bun run --hot src/index.ts"
+  },
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest",
+    "debug": "^4.4.3"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "hono": "^4.10.7",
+    "youtube-dl-exec": "^3.0.27"
+  },
+  "trustedDependencies": [
+    "youtube-dl-exec"
+  ]
+}
