@@ -124,7 +124,7 @@ struct DownloadOptionsView: View {
                 await MainActor.run {
                     withAnimation {
                         isDownloading = false
-                        errorMessage = "Download failed. Please ensure backend is running on localhost:3000."
+                        errorMessage = "Download failed. Please check your internet connection and try again."
                     }
                 }
             }

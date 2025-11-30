@@ -34,16 +34,25 @@ async function initYouTube() {
     const originalConsoleWarn = console.warn;
     console.warn = (...args) => {
       // Filter out YouTubeJS parser warnings
-      if (args[0]?.includes?.('[YOUTUBEJS][Parser]')) {
+      if (args[0]?.includes?.("[YOUTUBEJS][Parser]")) {
         return;
       }
       originalConsoleWarn(...args);
     };
 
-    yt = await Innertube.create({
+    const config: any = {
       cache: new UniversalCache(false),
       generate_session_locally: true,
-    });
+      cookie: "CIqOuajr3PfzfBC5nvHR5pqRAxjMw_XR5pqRAw==",
+    };
+
+    yt = await Innertube.create(config);
+    console.log(
+      "🔥 YouTube client initialized successfully",
+      config.cookie,
+      config.visitor_data,
+      config.po_token
+    );
   }
   return yt;
 }
@@ -111,15 +120,28 @@ app.post("/api/download", async (c) => {
     const cleanTitle = title.replace(/[^a-z0-9]/gi, "_").toLowerCase();
 
     console.log("📹 [BACKEND] Video title:", title);
-    console.log("🎵 [BACKEND] Available formats count:", info.streaming_data?.formats?.length || 0);
-    console.log("🎵 [BACKEND] Available adaptive formats count:", info.streaming_data?.adaptive_formats?.length || 0);
+    console.log(
+      "🎵 [BACKEND] Available formats count:",
+      info.streaming_data?.formats?.length || 0
+    );
+    console.log(
+      "🎵 [BACKEND] Available adaptive formats count:",
+      info.streaming_data?.adaptive_formats?.length || 0
+    );
 
     // Log audio-only formats for debugging
-    const audioFormats = info.streaming_data?.adaptive_formats?.filter((f: any) => f.has_audio && !f.has_video);
-    console.log("🎵 [BACKEND] Audio-only formats available:", audioFormats?.length || 0);
+    const audioFormats = info.streaming_data?.adaptive_formats?.filter(
+      (f: any) => f.has_audio && !f.has_video
+    );
+    console.log(
+      "🎵 [BACKEND] Audio-only formats available:",
+      audioFormats?.length || 0
+    );
     if (audioFormats && audioFormats.length > 0) {
       audioFormats.forEach((f: any, i: number) => {
-        console.log(`   [${i}] ${f.mime_type} - ${f.bitrate} bps - ${f.audio_quality}`);
+        console.log(
+          `   [${i}] ${f.mime_type} - ${f.bitrate} bps - ${f.audio_quality}`
+        );
       });
     }
 
@@ -135,7 +157,9 @@ app.post("/api/download", async (c) => {
 
       // Note: YouTube doesn't serve MP3 files directly. It serves audio/mp4 (m4a) or audio/webm (opus).
       // The quality parameter causes issues with URL deciphering, so we skip it for audio downloads.
-      console.log("🎵 [BACKEND] Attempting MP3 download with type: 'audio' (no quality param to avoid decipher errors)");
+      console.log(
+        "🎵 [BACKEND] Attempting MP3 download with type: 'audio' (no quality param to avoid decipher errors)"
+      );
 
       stream = await info.download({
         type: "audio",
@@ -146,7 +170,10 @@ app.post("/api/download", async (c) => {
       fileExtension = "mp4";
       contentType = "video/mp4";
 
-      console.log("🎬 [BACKEND] Attempting MP4 download with type: 'video+audio', quality:", quality);
+      console.log(
+        "🎬 [BACKEND] Attempting MP4 download with type: 'video+audio', quality:",
+        quality
+      );
 
       try {
         stream = await info.download({
@@ -165,7 +192,9 @@ app.post("/api/download", async (c) => {
             quality: "best",
             format: "mp4",
           });
-          console.log("✅ [BACKEND] MP4 download stream created (with fallback quality)");
+          console.log(
+            "✅ [BACKEND] MP4 download stream created (with fallback quality)"
+          );
         } else {
           throw error;
         }
@@ -185,8 +214,34 @@ app.post("/api/download", async (c) => {
         "Content-Disposition": `attachment; filename="${cleanTitle}.${fileExtension}"`,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Download error:", error);
+
+    // Handle specific YouTube errors
+    if (error.info?.error_type === "LOGIN_REQUIRED") {
+      return c.json(
+        {
+          error: "Authentication required",
+          message:
+            "This video requires authentication. The backend needs YouTube cookies to access it.",
+          error_type: "LOGIN_REQUIRED",
+        },
+        403
+      );
+    }
+
+    if (error.info?.error_type === "UNPLAYABLE") {
+      return c.json(
+        {
+          error: "Video unavailable",
+          message:
+            "This video is not available (may be private, deleted, or region-locked).",
+          error_type: "UNPLAYABLE",
+        },
+        400
+      );
+    }
+
     return c.json(
       {
         error: "Failed to download video",

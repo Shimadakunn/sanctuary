@@ -12,6 +12,7 @@
     "youtubei.js": "^16.0.1"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/node": "^24.10.1"
   }
 }
