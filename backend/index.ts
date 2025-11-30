@@ -64,6 +64,12 @@ app.post("/api/download", async (c) => {
     const body = await c.req.json();
     const { url, format = "mp4", quality = "best" } = body;
 
+    // Log incoming request
+    console.log("📥 [BACKEND] Received download request:");
+    console.log("   URL:", url);
+    console.log("   Format:", format);
+    console.log("   Quality:", quality);
+
     if (!url) {
       return c.json({ error: "URL is required" }, 400);
     }
@@ -99,9 +105,23 @@ app.post("/api/download", async (c) => {
     const youtube = await initYouTube();
 
     // Get detailed video info
+    console.log("🔍 [BACKEND] Fetching video info for ID:", videoId);
     const info = await youtube.getInfo(videoId);
     const title = info.basic_info.title || "video";
     const cleanTitle = title.replace(/[^a-z0-9]/gi, "_").toLowerCase();
+
+    console.log("📹 [BACKEND] Video title:", title);
+    console.log("🎵 [BACKEND] Available formats count:", info.streaming_data?.formats?.length || 0);
+    console.log("🎵 [BACKEND] Available adaptive formats count:", info.streaming_data?.adaptive_formats?.length || 0);
+
+    // Log audio-only formats for debugging
+    const audioFormats = info.streaming_data?.adaptive_formats?.filter((f: any) => f.has_audio && !f.has_video);
+    console.log("🎵 [BACKEND] Audio-only formats available:", audioFormats?.length || 0);
+    if (audioFormats && audioFormats.length > 0) {
+      audioFormats.forEach((f: any, i: number) => {
+        console.log(`   [${i}] ${f.mime_type} - ${f.bitrate} bps - ${f.audio_quality}`);
+      });
+    }
 
     // Determine download type and format based on user selection
     let fileExtension: string;
@@ -113,25 +133,20 @@ app.post("/api/download", async (c) => {
       fileExtension = "mp3";
       contentType = "audio/mpeg";
 
-      try {
-        stream = await info.download({
-          type: "audio",
-          quality: quality || "best",
-        });
-      } catch (error: any) {
-        console.log(
-          "Audio download error, trying with default settings:",
-          error.message
-        );
-        // Fallback: try without quality specification
-        stream = await info.download({
-          type: "audio",
-        });
-      }
+      // Note: YouTube doesn't serve MP3 files directly. It serves audio/mp4 (m4a) or audio/webm (opus).
+      // The quality parameter causes issues with URL deciphering, so we skip it for audio downloads.
+      console.log("🎵 [BACKEND] Attempting MP3 download with type: 'audio' (no quality param to avoid decipher errors)");
+
+      stream = await info.download({
+        type: "audio",
+      });
+      console.log("✅ [BACKEND] MP3 download stream created successfully");
     } else {
       // Video download
       fileExtension = "mp4";
       contentType = "video/mp4";
+
+      console.log("🎬 [BACKEND] Attempting MP4 download with type: 'video+audio', quality:", quality);
 
       try {
         stream = await info.download({
@@ -139,6 +154,7 @@ app.post("/api/download", async (c) => {
           quality: quality || "best",
           format: "mp4",
         });
+        console.log("✅ [BACKEND] MP4 download stream created successfully");
       } catch (error: any) {
         if (error.message?.includes("No matching formats")) {
           console.log(
@@ -149,6 +165,7 @@ app.post("/api/download", async (c) => {
             quality: "best",
             format: "mp4",
           });
+          console.log("✅ [BACKEND] MP4 download stream created (with fallback quality)");
         } else {
           throw error;
         }
@@ -156,14 +173,18 @@ app.post("/api/download", async (c) => {
     }
 
     // Set headers for download
-    c.header("Content-Type", contentType);
-    c.header(
-      "Content-Disposition",
-      `attachment; filename="${cleanTitle}.${fileExtension}"`
-    );
+    console.log("📤 [BACKEND] Setting response headers:");
+    console.log("   Content-Type:", contentType);
+    console.log("   Filename:", `${cleanTitle}.${fileExtension}`);
 
-    // Return the stream
-    return new Response(stream as ReadableStream);
+    // Return the stream with proper headers
+    console.log("✅ [BACKEND] Returning stream to client");
+    return new Response(stream as ReadableStream, {
+      headers: {
+        "Content-Type": contentType,
+        "Content-Disposition": `attachment; filename="${cleanTitle}.${fileExtension}"`,
+      },
+    });
   } catch (error) {
     console.error("Download error:", error);
     return c.json(
