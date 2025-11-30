@@ -8,58 +8,84 @@
 import Foundation
 import Combine
 
+struct VideoInfoResponse: Codable {
+    let title: String?
+    let url: String
+    let thumbnail: String?
+}
+
 class DownloadManager: ObservableObject {
     static let shared = DownloadManager()
     
     private init() {}
     
     func downloadVideo(url: URL, filename: String, format: String) async throws {
-        print("⬇️ [iOS] Starting download for: \(url.absoluteString)")
-        print("📋 [iOS] Requested format: \(format)")
-        print("📋 [iOS] Filename: \(filename)")
-
-        // Use the production server URL
-        guard let apiUrl = URL(string: "http://localhost:3000/download") else {
+        print("⬇️ [iOS] Starting download process for: \(url.absoluteString)")
+        
+        // 1. Request the direct download link from the backend
+        guard let apiUrl = URL(string: "https://sanctuary-378h.vercel.app/download") else {
             throw URLError(.badURL)
         }
 
         var request = URLRequest(url: apiUrl)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 300 // 5 minutes timeout for large files
+        request.timeoutInterval = 60 // Timeout for obtaining the link
 
+        // We send the format preferences, though actual result depends on backend capabilities
         let body: [String: Any] = [
             "url": url.absoluteString,
             "format": format,
-            "quality": "best",
-            "title": filename
+            "quality": "best"
         ]
 
-        print("📤 [iOS] Sending request to backend:")
-        print("   URL: \(url.absoluteString)")
-        print("   Format: \(format)")
-        print("   Quality: best")
-        print("   Title: \(filename)")
-
+        print("📤 [iOS] Requesting video info from backend...")
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        let (downloadedURL, response) = try await URLSession.shared.download(for: request)
+        let (data, response) = try await URLSession.shared.data(for: request)
 
-        // Log response details
-        if let httpResponse = response as? HTTPURLResponse {
-            print("📥 [iOS] Received response:")
-            print("   Status code: \(httpResponse.statusCode)")
-            print("   Content-Type: \(httpResponse.value(forHTTPHeaderField: "Content-Type") ?? "unknown")")
-            print("   Content-Disposition: \(httpResponse.value(forHTTPHeaderField: "Content-Disposition") ?? "unknown")")
-        }
-
-        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
-            print("❌ [iOS] Server returned error: \(statusCode)")
+        guard let httpResponse = response as? HTTPURLResponse else {
             throw URLError(.badServerResponse)
         }
 
-        // Move file to Documents directory
+        if httpResponse.statusCode != 200 {
+            print("❌ [iOS] Backend error: \(httpResponse.statusCode)")
+            // Try to parse error message if available
+            if let errorJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let errorMessage = errorJson["error"] as? String {
+                print("❌ [iOS] Error details: \(errorMessage)")
+            }
+            throw URLError(.badServerResponse)
+        }
+
+        // Parse the JSON response to get the direct URL
+        let videoInfo = try JSONDecoder().decode(VideoInfoResponse.self, from: data)
+        
+        guard let directDownloadURL = URL(string: videoInfo.url) else {
+            print("❌ [iOS] Invalid direct URL returned")
+            throw URLError(.badURL)
+        }
+
+        print("✅ [iOS] Received direct link: \(directDownloadURL.host ?? "unknown")")
+
+        // 2. Download the actual file from the direct link
+        print("⬇️ [iOS] Starting file download...")
+        var downloadRequest = URLRequest(url: directDownloadURL)
+        downloadRequest.timeoutInterval = 300 // 5 minutes for large files
+        
+        let (downloadedURL, downloadResponse) = try await URLSession.shared.download(for: downloadRequest)
+
+        if let httpDownloadResponse = downloadResponse as? HTTPURLResponse {
+            print("📥 [iOS] File download status: \(httpDownloadResponse.statusCode)")
+            print("   Content-Type: \(httpDownloadResponse.value(forHTTPHeaderField: "Content-Type") ?? "unknown")")
+            print("   Size: \(httpDownloadResponse.expectedContentLength) bytes")
+            
+            guard httpDownloadResponse.statusCode == 200 else {
+                throw URLError(.badServerResponse)
+            }
+        }
+
+        // 3. Move file to Documents directory
         let fileManager = FileManager.default
         guard let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
             throw URLError(.fileDoesNotExist)
@@ -69,14 +95,6 @@ class DownloadManager: ObservableObject {
         let safeFilename = filename.replacingOccurrences(of: "/", with: "_")
         let finalFilename = safeFilename.hasSuffix(".\(format)") ? safeFilename : "\(safeFilename).\(format)"
         let destinationURL = documentsURL.appendingPathComponent(finalFilename)
-
-        // Log temporary file info
-        if let fileAttributes = try? fileManager.attributesOfItem(atPath: downloadedURL.path),
-           let fileSize = fileAttributes[.size] as? Int64 {
-            print("📦 [iOS] Downloaded file info:")
-            print("   Temp path: \(downloadedURL.path)")
-            print("   File size: \(fileSize) bytes (\(Double(fileSize) / 1024.0 / 1024.0) MB)")
-        }
 
         // Remove existing file if needed
         if fileManager.fileExists(atPath: destinationURL.path) {
@@ -90,8 +108,6 @@ class DownloadManager: ObservableObject {
            let fileSize = fileAttributes[.size] as? Int64 {
             print("✅ [iOS] File saved successfully:")
             print("   Path: \(destinationURL.path)")
-            print("   Requested format: \(format)")
-            print("   Final filename: \(finalFilename)")
             print("   File size: \(fileSize) bytes (\(Double(fileSize) / 1024.0 / 1024.0) MB)")
         }
     }
