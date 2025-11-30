@@ -22,18 +22,17 @@ def get_download_link(request: DownloadRequest):
     """
     try:
         # Locate the cookie file
-        # Script is in /api, cookie file is in root / (backend_python/)
+        # Script is in /api, and we moved the cookie file to /api/www.youtube.com_cookies.txt
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.dirname(current_dir)
-        cookie_file = os.path.join(project_root, 'www.youtube.com_cookies.txt')
+        cookie_file = os.path.join(current_dir, 'www.youtube.com_cookies.txt')
 
-        # Check if file exists, fallback to checking current directory if path logic fails
+        # Verify file exists
         if not os.path.exists(cookie_file):
-            if os.path.exists('www.youtube.com_cookies.txt'):
-                cookie_file = 'www.youtube.com_cookies.txt'
-            else:
-                print(f"⚠️ Cookie file not found at: {cookie_file}")
-                cookie_file = None
+            print(f"⚠️ CRITICAL: Cookie file not found at: {cookie_file}")
+            # We continue, but it will likely fail
+            cookie_file = None
+        else:
+            print(f"✅ Found cookie file at: {cookie_file}")
 
         # Configure yt-dlp options
         # We prioritize 'best' which usually means best single file containing both video and audio
@@ -42,6 +41,7 @@ def get_download_link(request: DownloadRequest):
             'quiet': True,
             'no_warnings': True,
             'format': 'best',
+            'verbose': True, # Enable verbose logging to debug auth issues
         }
         
         if cookie_file:
@@ -80,6 +80,8 @@ def get_download_link(request: DownloadRequest):
             }
 
     except Exception as e:
+        # Include the error string in the response for easier debugging
+        print(f"❌ Error processing request: {str(e)}")
         return JSONResponse(status_code=400, content={"error": str(e)})
 
 if __name__ == "__main__":

@@ -1,0 +1,9 @@
+# Netscape HTTP Cookie File
+# https://curl.haxx.se/rfc/cookie_spec.html
+# This is a generated file! Do not edit.
+
+.youtube.com	TRUE	/	TRUE	1798671544	__Secure-YENID	11.YTE=HaHSKcFtBh67z980foL1bp4kfUtV9K9TocDOwTMlqDAlBKz_yfNVBWk9m6sKl-Y58rHqc3OT_cX28AvKj5CYt7DENwgo9-RUqiameEQDyEtZY7rEmciBMlOwY_Xhs7SgER5ervsN_RBxSTuNQ8KEkhkXw2kNsLh9csoy8g6BQo476Rgh7mNG1yeSfLUyXbUCIH8h1VuaeStnwa5gD8Fj6iylxfsAApKh_83SsP0-Kl-zAT0cZK_3vlChXuJ-3MP9UmXbpdSUSaRc3pBjVLZd4gWUIfdgbdiRIEotDxUaLCmfknlVA6pSmtQYwqIUOPgJCVdK71tjN7_UvoFHHf-LBQ
+.youtube.com	TRUE	/	TRUE	1799104434	PREF	f4=4000000&f6=40000000&tz=Europe.Paris
+.youtube.com	TRUE	/	TRUE	1798671542	__Secure-YEC	CgtPdEJ6bTJOLV9qcyixn7PJBjInCgJGUhIhEh0SGwsMDg8QERITFBUWFxgZGhscHR4fICEiIyQlJiAZ
+.youtube.com	TRUE	/	TRUE	0	YSC	aU665VGDlCI
+.youtube.com	TRUE	/	TRUE	1798672433	VISITOR_PRIVACY_METADATA	CgJGUhIhEh0SGwsMDg8QERITFBUWFxgZGhscHR4fICEiIyQlJiAZ
