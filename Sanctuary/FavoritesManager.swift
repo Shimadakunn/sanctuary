@@ -49,7 +49,7 @@ class FavoritesManager: ObservableObject {
             ("Live Sports".localized, "https://sportyhunter.com/", "sportscourt.fill", "green"),
             ("Live TV".localized, "https://tv.garden/", "tv.fill", "blue"),
             ("eBooks".localized, "https://z-lib.gd/", "books.vertical.fill", "indigo"),
-            ("Comics".localized, "https://readcomicsonline.li/", "text.book.closed.fill", "yellow"),
+            ("Comics".localized, "https://readcomiconline.li/", "text.book.closed.fill", "yellow"),
         ]
 
         for (title, url, icon, color) in defaults {
@@ -148,7 +148,7 @@ class FavoritesManager: ObservableObject {
             "https://sportyhunter.com/": "Live Sports",
             "https://tv.garden/": "Live TV",
             "https://z-lib.gd/": "eBooks",
-            "https://readcomicsonline.li/": "Comics"
+            "https://readcomiconline.li/": "Comics"
         ]
 
         var needsUpdate = false
