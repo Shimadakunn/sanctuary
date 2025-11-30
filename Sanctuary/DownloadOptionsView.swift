@@ -24,12 +24,22 @@ struct DownloadOptionsView: View {
                     TextField("Filename".localized, text: $filename)
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
-                    
-                    Picker("Format".localized, selection: $format) {
-                        Text("MP4 (Video)").tag("mp4")
-                        Text("MP3 (Audio)").tag("mp3")
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Format".localized)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Picker("Format".localized, selection: $format) {
+                            Text("MP4 (Video)").tag("mp4")
+                            Text("MP3 (Audio)").tag("mp3")
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                        .labelsHidden()
+                        .padding(8)
+                        .background(Color.adaptiveSecondaryBackground)
+                        .cornerRadius(8)
                     }
-                    .pickerStyle(SegmentedPickerStyle())
+                    .listRowBackground(Color.clear)
                 }
                 
                 if isDownloading {
