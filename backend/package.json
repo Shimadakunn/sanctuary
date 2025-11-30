@@ -1,0 +1,17 @@
+{
+  "name": "video-downloader-api",
+  "version": "1.0.0",
+  "description": "Video downloader API using Bun and Hono",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --watch index.ts",
+    "start": "bun run index.ts"
+  },
+  "dependencies": {
+    "hono": "^4.10.7",
+    "youtubei.js": "^16.0.1"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}
