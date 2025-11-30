@@ -2,6 +2,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import yt_dlp
+import tempfile
+import os
 
 app = FastAPI()
 
@@ -9,6 +11,22 @@ class DownloadRequest(BaseModel):
     url: str
     format: str = "mp4"
     quality: str = "best"
+
+def create_cookie_file():
+    """
+    Creates a temporary Netscape-formatted cookie file with hardcoded cookies
+    to bypass YouTube's bot detection.
+    """
+    content = """# Netscape HTTP Cookie File
+.youtube.com\tTRUE\t/\tTRUE\t2147483647\t___Secure-YEC\tCgtPdEJ6bTJOLV9qcyiPnLPJBjInCgJGUhIhEh0SGwsMDg8QERITFBUWFxgZGhscHR4fICEiIyQlJiAZ
+.youtube.com\tTRUE\t/\tTRUE\t2147483647\t___Secure-YENID\t11.YTE=HaHSKcFtBh67z980foL1bp4kfUtV9K9TocDOwTMlqDAlBKz_yfNVBWk9m6sKl-Y58rHqc3OT_cX28AvKj5CYt7DENwgo9-RUqiameEQDyEtZY7rEmciBMlOwY_Xhs7SgER5ervsN_RBxSTuNQ8KEkhkXw2kNsLh9csoy8g6BQo476Rgh7mNG1yeSfLUyXbUCIH8h1VuaeStnwa5gD8Fj6iylxfsAApKh_83SsP0-Kl-zAT0cZK_3vlChXuJ-3MP9UmXbpdSUSaRc3pBjVLZd4gWUIfdgbdiRIEotDxUaLCmfknlVA6pSmtQYwqIUOPgJCVdK71tjN7_UvoFHHf-LBQ
+.youtube.com\tTRUE\t/\tTRUE\t2147483647\tPREF\tf4=4000000&f6=40000000&tz=Europe.Paris
+"""
+    # Create a temporary file. Vercel functions allow writing to /tmp.
+    fd, path = tempfile.mkstemp(suffix=".txt", text=True)
+    with os.fdopen(fd, 'w') as f:
+        f.write(content)
+    return path
 
 @app.get("/")
 def home():
@@ -19,14 +37,19 @@ def get_download_link(request: DownloadRequest):
     """
     Extracts the direct download URL for the requested YouTube video.
     """
+    cookie_file = None
     try:
+        # Create cookie file
+        cookie_file = create_cookie_file()
+
         # Configure yt-dlp options
         # We prioritize 'best' which usually means best single file containing both video and audio
         # because we cannot merge streams (no FFmpeg on standard Vercel runtime).
         ydl_opts = {
             'quiet': True,
             'no_warnings': True,
-            'format': 'best', 
+            'format': 'best',
+            'cookiefile': cookie_file,
         }
 
         if request.format == 'mp3':
@@ -63,6 +86,13 @@ def get_download_link(request: DownloadRequest):
 
     except Exception as e:
         return JSONResponse(status_code=400, content={"error": str(e)})
+    finally:
+        # Clean up the temporary cookie file
+        if cookie_file and os.path.exists(cookie_file):
+            try:
+                os.remove(cookie_file)
+            except:
+                pass
 
 if __name__ == "__main__":
     import uvicorn
