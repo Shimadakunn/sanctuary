@@ -158,7 +158,7 @@ struct FilesView: View {
     
     private func isVideo(file: FileItem) -> Bool {
         let ext = file.url.pathExtension.lowercased()
-        return ["mp4", "mov", "avi", "m4v"].contains(ext)
+        return ["mp4", "mov", "avi", "m4v", "m3u8"].contains(ext)
     }
 
     private func isAudio(file: FileItem) -> Bool {
@@ -342,7 +342,7 @@ struct FileRow: View {
             return "doc.fill"
         case "jpg", "jpeg", "png", "gif", "heic":
             return "photo.fill"
-        case "mp4", "mov", "avi":
+        case "mp4", "mov", "avi", "m3u8":
             return "play.rectangle.fill"
         case "mp3", "wav", "m4a":
             return "music.note"
@@ -366,7 +366,7 @@ struct FileRow: View {
             return .red
         case "jpg", "jpeg", "png", "gif", "heic":
             return .green
-        case "mp4", "mov", "avi":
+        case "mp4", "mov", "avi", "m3u8":
             return .purple
         case "mp3", "wav", "m4a":
             return .pink
@@ -453,7 +453,7 @@ struct FilePreviewView: View {
 
     private var isVideo: Bool {
         let ext = file.url.pathExtension.lowercased()
-        return ["mp4", "mov", "avi", "m4v"].contains(ext)
+        return ["mp4", "mov", "avi", "m4v", "m3u8"].contains(ext)
     }
 
     private var isAudio: Bool {
@@ -473,7 +473,7 @@ struct FilePreviewView: View {
             return "doc.fill"
         case "jpg", "jpeg", "png", "gif", "heic":
             return "photo.fill"
-        case "mp4", "mov", "avi":
+        case "mp4", "mov", "avi", "m3u8":
             return "play.rectangle.fill"
         case "mp3", "wav", "m4a":
             return "music.note"
@@ -493,7 +493,7 @@ struct FilePreviewView: View {
             return .red
         case "jpg", "jpeg", "png", "gif", "heic":
             return .green
-        case "mp4", "mov", "avi":
+        case "mp4", "mov", "avi", "m3u8":
             return .purple
         case "mp3", "wav", "m4a":
             return .pink

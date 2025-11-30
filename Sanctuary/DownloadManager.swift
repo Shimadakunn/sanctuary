@@ -16,9 +16,33 @@ struct VideoInfoResponse: Codable {
 
 class DownloadManager: ObservableObject {
     static let shared = DownloadManager()
-    
+
     private init() {}
-    
+
+    private func getFileExtension(fromContentType contentType: String?) -> String {
+        guard let contentType = contentType else { return "mp4" } // Default to mp4 if no content type
+
+        if contentType.contains("video/mp4") {
+            return "mp4"
+        } else if contentType.contains("video/webm") {
+            return "webm"
+        } else if contentType.contains("video/quicktime") { // For .mov
+            return "mov"
+        } else if contentType.contains("application/vnd.apple.mpegurl") || contentType.contains("application/x-mpegURL") {
+            return "m3u8" // HLS playlist
+        } else if contentType.contains("audio/mpeg") {
+            return "mp3"
+        } else if contentType.contains("audio/wav") {
+            return "wav"
+        } else if contentType.contains("audio/x-m4a") || contentType.contains("audio/mp4") { // For .m4a
+            return "m4a"
+        } else if contentType.contains("audio/aac") {
+            return "aac"
+        }
+        // Fallback or handle other types as needed
+        return "mp4" // Default to mp4
+    }
+
     func downloadVideo(url: URL, filename: String, format: String) async throws {
         print("⬇️ [iOS] Starting download process for: \(url.absoluteString)")
         
@@ -75,9 +99,14 @@ class DownloadManager: ObservableObject {
         
         let (downloadedURL, downloadResponse) = try await URLSession.shared.download(for: downloadRequest)
 
+        var actualFileExtension = format // Fallback to requested format
         if let httpDownloadResponse = downloadResponse as? HTTPURLResponse {
+            let contentType = httpDownloadResponse.value(forHTTPHeaderField: "Content-Type")
+            actualFileExtension = getFileExtension(fromContentType: contentType)
+
             print("📥 [iOS] File download status: \(httpDownloadResponse.statusCode)")
-            print("   Content-Type: \(httpDownloadResponse.value(forHTTPHeaderField: "Content-Type") ?? "unknown")")
+            print("   Content-Type: \(contentType ?? "unknown")")
+            print("   Deduced Extension: \(actualFileExtension)")
             print("   Size: \(httpDownloadResponse.expectedContentLength) bytes")
             
             guard httpDownloadResponse.statusCode == 200 else {
@@ -93,7 +122,7 @@ class DownloadManager: ObservableObject {
 
         // Ensure filename has correct extension
         let safeFilename = filename.replacingOccurrences(of: "/", with: "_")
-        let finalFilename = safeFilename.hasSuffix(".\(format)") ? safeFilename : "\(safeFilename).\(format)"
+        let finalFilename = safeFilename.hasSuffix(".\(actualFileExtension)") ? safeFilename : "\(safeFilename).\(actualFileExtension)"
         let destinationURL = documentsURL.appendingPathComponent(finalFilename)
 
         // Remove existing file if needed

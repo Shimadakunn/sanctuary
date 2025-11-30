@@ -47,7 +47,8 @@ def get_download_link(request: DownloadRequest):
         ydl_opts = {
             'quiet': True,
             'no_warnings': True,
-            'format': 'best',
+            # Prioritize progressive MP4s (video+audio in one file) for direct download compatibility
+            'format': 'best[ext=mp4][acodec!=none]/best[ext=mp4]/best',
             'verbose': True, # Enable verbose logging to debug auth issues
         }
         
