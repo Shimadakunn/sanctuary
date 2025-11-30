@@ -68,3 +68,13 @@
 "Remove from Favorites" = "Remove from Favorites";
 "Hide" = "Hide";
 "Add Favorite" = "Add Favorite";
+
+/* Download */
+"Download" = "Download";
+"Download Video" = "Download Video";
+"Filename" = "Filename";
+"Format" = "Format";
+"Downloading..." = "Downloading...";
+"Download Complete" = "Download Complete";
+"Close" = "Close";
+"Video Details" = "Video Details";

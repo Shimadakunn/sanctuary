@@ -21,6 +21,7 @@ struct BrowserView: View {
 
     @State private var showAddFavoriteSheet = false
     @State private var showMenuSheet = false
+    @State private var showDownloadSheet = false
 
     var body: some View {
         ZStack {
@@ -152,6 +153,36 @@ struct BrowserView: View {
                             .background(Color.clear)
                         }
 
+                        if let currentURL = webViewStore.webView?.url,
+                           (currentURL.host?.contains("youtube.com") == true || currentURL.host == "youtu.be"),
+                           currentURL.path.contains("watch") || currentURL.host == "youtu.be" {
+                            
+                            Button(action: {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    showMenuSheet = false
+                                }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                    showDownloadSheet = true
+                                }
+                            }) {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "arrow.down.circle")
+                                        .font(.system(size: 18))
+                                        .foregroundColor(.primary)
+                                        .frame(width: 24)
+
+                                    Text("Download".localized)
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.primary)
+
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 12)
+                                .background(Color.clear)
+                            }
+                        }
+
                         Button(action: {
                             let currentURL = webViewStore.webView?.url?.absoluteString ?? ""
                             withAnimation(.easeInOut(duration: 0.3)) {
@@ -248,6 +279,11 @@ struct BrowserView: View {
                 favoritesManager: favoritesManager,
                 isPresented: $showAddFavoriteSheet
             )
+        }
+        .sheet(isPresented: $showDownloadSheet) {
+            if let url = webViewStore.webView?.url {
+                DownloadOptionsView(url: url, isPresented: $showDownloadSheet)
+            }
         }
     }
 }

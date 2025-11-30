@@ -7,12 +7,20 @@
 
 internal import SwiftUI
 import UniformTypeIdentifiers
+import AVKit
 
 struct FilesView: View {
     @State private var currentPath: URL
     @State private var items: [FileItem] = []
     @State private var isLoading = false
     @State private var selectedFile: FileItem?
+    @State private var videoToPlay: FileItem?
+    @State private var audioToPlay: FileItem?
+    @State private var isEditMode = false
+    @State private var selectedItems: Set<UUID> = []
+    @State private var showRenameAlert = false
+    @State private var itemToRename: FileItem?
+    @State private var newFileName = ""
 
     init() {
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
@@ -22,6 +30,7 @@ struct FilesView: View {
     var body: some View {
         List {
             if items.isEmpty && !isLoading {
+                // ... existing empty state ...
                 VStack(spacing: 16) {
                     Image(systemName: "folder")
                         .font(.system(size: 64))
@@ -38,11 +47,49 @@ struct FilesView: View {
                 .listRowBackground(Color.clear)
             } else {
                 ForEach(items) { item in
-                    FileRow(item: item) {
+                    if isEditMode {
+                        HStack {
+                            Button(action: { toggleSelection(item) }) {
+                                Image(systemName: selectedItems.contains(item.id) ? "checkmark.circle.fill" : "circle")
+                                    .foregroundColor(selectedItems.contains(item.id) ? .blue : .gray)
+                                    .font(.system(size: 24))
+                            }
+                            .buttonStyle(PlainButtonStyle())
+
+                            FileRow(item: item)
+
+                            Spacer()
+
+                            Button(action: {
+                                itemToRename = item
+                                newFileName = item.url.deletingPathExtension().lastPathComponent
+                                showRenameAlert = true
+                            }) {
+                                Image(systemName: "pencil")
+                                    .foregroundColor(.blue)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    } else {
                         if item.isDirectory {
-                            navigateToFolder(item.url)
+                            Button(action: { navigateToFolder(item.url) }) {
+                                FileRow(item: item)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        } else if isVideo(file: item) {
+                            Button(action: { videoToPlay = item }) {
+                                FileRow(item: item)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        } else if isAudio(file: item) {
+                            Button(action: { audioToPlay = item }) {
+                                FileRow(item: item)
+                            }
+                            .buttonStyle(PlainButtonStyle())
                         } else {
-                            selectedFile = item
+                            NavigationLink(destination: FilePreviewView(file: item)) {
+                                FileRow(item: item)
+                            }
                         }
                     }
                 }
@@ -59,13 +106,112 @@ struct FilesView: View {
                     }
                 }
             }
+
+            ToolbarItem(placement: .navigationBarTrailing) {
+                if isEditMode {
+                    HStack(spacing: 16) {
+                        if !selectedItems.isEmpty {
+                            Button(action: deleteSelectedItems) {
+                                Image(systemName: "trash")
+                                    .foregroundColor(.red)
+                            }
+                        }
+                        Button("Done") {
+                            isEditMode = false
+                            selectedItems.removeAll()
+                        }
+                    }
+                } else {
+                    Button("Edit") {
+                        isEditMode = true
+                    }
+                    .disabled(items.isEmpty)
+                }
+            }
         }
         .onAppear {
             loadFiles()
         }
-        .sheet(item: $selectedFile) { file in
-            FilePreviewView(file: file)
+        .fullScreenCover(item: $videoToPlay) { item in
+            LandscapeVideoPlayer(url: item.url)
+                .ignoresSafeArea()
         }
+        .fullScreenCover(item: $audioToPlay) { item in
+            AudioPlayer(url: item.url)
+                .ignoresSafeArea()
+        }
+        .alert("Rename File", isPresented: $showRenameAlert) {
+            TextField("File name", text: $newFileName)
+            Button("Cancel", role: .cancel) {
+                itemToRename = nil
+                newFileName = ""
+            }
+            Button("Rename") {
+                if let item = itemToRename {
+                    renameFile(item)
+                }
+            }
+        } message: {
+            Text("Enter a new name for the file")
+        }
+    }
+    
+    private func isVideo(file: FileItem) -> Bool {
+        let ext = file.url.pathExtension.lowercased()
+        return ["mp4", "mov", "avi", "m4v"].contains(ext)
+    }
+
+    private func isAudio(file: FileItem) -> Bool {
+        let ext = file.url.pathExtension.lowercased()
+        return ["mp3", "wav", "m4a", "aac"].contains(ext)
+    }
+
+    private func toggleSelection(_ item: FileItem) {
+        if selectedItems.contains(item.id) {
+            selectedItems.remove(item.id)
+        } else {
+            selectedItems.insert(item.id)
+        }
+    }
+
+    private func deleteSelectedItems() {
+        let itemsToDelete = items.filter { selectedItems.contains($0.id) }
+
+        for item in itemsToDelete {
+            do {
+                try FileManager.default.removeItem(at: item.url)
+                print("✅ Deleted: \(item.name)")
+            } catch {
+                print("❌ Error deleting \(item.name): \(error)")
+            }
+        }
+
+        selectedItems.removeAll()
+        isEditMode = false
+        loadFiles()
+    }
+
+    private func renameFile(_ item: FileItem) {
+        guard !newFileName.isEmpty else {
+            itemToRename = nil
+            newFileName = ""
+            return
+        }
+
+        let fileExtension = item.url.pathExtension
+        let newName = newFileName + (fileExtension.isEmpty ? "" : ".\(fileExtension)")
+        let newURL = item.url.deletingLastPathComponent().appendingPathComponent(newName)
+
+        do {
+            try FileManager.default.moveItem(at: item.url, to: newURL)
+            print("✅ Renamed: \(item.name) → \(newName)")
+            loadFiles()
+        } catch {
+            print("❌ Error renaming file: \(error)")
+        }
+
+        itemToRename = nil
+        newFileName = ""
     }
 
     private func loadFiles() {
@@ -140,53 +286,49 @@ struct FileItem: Identifiable {
 
 struct FileRow: View {
     let item: FileItem
-    let onTap: () -> Void
 
     var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 12) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(iconColor.opacity(0.15))
-                        .frame(width: 40, height: 40)
+        HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(iconColor.opacity(0.15))
+                    .frame(width: 40, height: 40)
 
-                    Image(systemName: iconName)
-                        .font(.system(size: 18))
-                        .foregroundColor(iconColor)
-                }
+                Image(systemName: iconName)
+                    .font(.system(size: 18))
+                    .foregroundColor(iconColor)
+            }
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(item.name)
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.primary)
-                        .lineLimit(1)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(item.name)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
 
-                    HStack(spacing: 8) {
-                        if !item.isDirectory {
-                            Text(formatFileSize(item.size))
-                                .font(.system(size: 12))
-                                .foregroundColor(.secondary)
-                            Text("•")
-                                .font(.system(size: 12))
-                                .foregroundColor(.secondary)
-                        }
-                        Text(formatDate(item.modificationDate))
+                HStack(spacing: 8) {
+                    if !item.isDirectory {
+                        Text(formatFileSize(item.size))
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                        Text("•")
                             .font(.system(size: 12))
                             .foregroundColor(.secondary)
                     }
-                }
-
-                Spacer()
-
-                if item.isDirectory {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14))
+                    Text(formatDate(item.modificationDate))
+                        .font(.system(size: 12))
                         .foregroundColor(.secondary)
                 }
             }
-            .padding(.vertical, 4)
+
+            Spacer()
+
+            if item.isDirectory {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14))
+                    .foregroundColor(.secondary)
+            }
         }
-        .buttonStyle(PlainButtonStyle())
+        .padding(.vertical, 4)
     }
 
     private var iconName: String {
@@ -254,45 +396,74 @@ struct FileRow: View {
 
 struct FilePreviewView: View {
     let file: FileItem
-    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(spacing: 20) {
-                    Image(systemName: iconName)
-                        .font(.system(size: 64))
-                        .foregroundColor(iconColor)
-                        .padding(.top, 40)
+        Group {
+            if isVideo {
+                VideoPlayer(player: AVPlayer(url: file.url))
+            } else if isAudio {
+                VideoPlayer(player: AVPlayer(url: file.url))
+            } else if isImage {
+                AsyncImage(url: file.url) { phase in
+                    switch phase {
+                    case .empty:
+                        ProgressView()
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                    case .failure:
+                        Image(systemName: "photo")
+                            .font(.largeTitle)
+                    @unknown default:
+                        EmptyView()
+                    }
+                }
+            } else {
+                ScrollView {
+                    VStack(spacing: 20) {
+                        Image(systemName: iconName)
+                            .font(.system(size: 64))
+                            .foregroundColor(iconColor)
+                            .padding(.top, 40)
 
-                    Text(file.name)
-                        .font(.system(size: 18, weight: .medium))
-                        .multilineTextAlignment(.center)
+                        Text(file.name)
+                            .font(.system(size: 18, weight: .medium))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+
+                        VStack(alignment: .leading, spacing: 12) {
+                            InfoRow(label: "Size", value: formatFileSize(file.size))
+                            InfoRow(label: "Modified", value: formatDate(file.modificationDate))
+                            InfoRow(label: "Location", value: file.url.deletingLastPathComponent().path)
+                        }
+                        .padding()
+                        .background(Color.adaptiveSecondaryBackground)
+                        .cornerRadius(12)
                         .padding(.horizontal)
 
-                    VStack(alignment: .leading, spacing: 12) {
-                        InfoRow(label: "Size", value: formatFileSize(file.size))
-                        InfoRow(label: "Modified", value: formatDate(file.modificationDate))
-                        InfoRow(label: "Location", value: file.url.deletingLastPathComponent().path)
-                    }
-                    .padding()
-                    .background(Color.adaptiveSecondaryBackground)
-                    .cornerRadius(12)
-                    .padding(.horizontal)
-
-                    Spacer()
-                }
-            }
-            .navigationTitle("File Info")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        dismiss()
+                        Spacer()
                     }
                 }
             }
         }
+        .navigationTitle(file.name)
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var isVideo: Bool {
+        let ext = file.url.pathExtension.lowercased()
+        return ["mp4", "mov", "avi", "m4v"].contains(ext)
+    }
+
+    private var isAudio: Bool {
+        let ext = file.url.pathExtension.lowercased()
+        return ["mp3", "wav", "m4a", "aac"].contains(ext)
+    }
+
+    private var isImage: Bool {
+        let ext = file.url.pathExtension.lowercased()
+        return ["jpg", "jpeg", "png", "gif", "heic"].contains(ext)
     }
 
     private var iconName: String {

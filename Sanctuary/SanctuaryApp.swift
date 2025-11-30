@@ -21,6 +21,8 @@ struct SanctuaryApp: App {
 }
 
 class AppDelegate: NSObject, UIApplicationDelegate {
+    static var orientationLock = UIInterfaceOrientationMask.portrait
+
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Initialize Google Mobile Ads SDK
         MobileAds.shared.start(completionHandler: nil)
@@ -42,21 +44,23 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
     func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
         guard let window = window else {
-            print("🔄 [Orientation] Window is nil - returning .portrait")
-            return .portrait
+            print("🔄 [Orientation] Window is nil - returning orientation lock: \(AppDelegate.orientationLock)")
+            return AppDelegate.orientationLock
         }
 
         let windowClassName = String(describing: type(of: window))
-        print("🔄 [Orientation] Window class: \(windowClassName)")
+        print("🔄 [Orientation] Window class: \(windowClassName), Orientation lock: \(AppDelegate.orientationLock)")
 
+        // Check for web video fullscreen (for videos played in browser)
         if windowClassName.contains("AVFullScreen") ||
            windowClassName.contains("PGHostedWindow") ||
            window.rootViewController?.presentedViewController?.description.contains("AVFullScreen") == true {
-            print("🔄 [Orientation] Fullscreen video detected - returning .landscape")
+            print("🔄 [Orientation] Fullscreen web video detected - returning .landscape")
             return .landscape
         }
 
-        print("🔄 [Orientation] Normal window - returning .portrait")
-        return .portrait
+        // Use the orientation lock set by video/audio players
+        print("🔄 [Orientation] Returning orientation lock: \(AppDelegate.orientationLock)")
+        return AppDelegate.orientationLock
     }
 }

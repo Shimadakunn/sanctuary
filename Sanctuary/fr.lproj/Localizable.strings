@@ -68,3 +68,13 @@
 "Remove from Favorites" = "Retirer des Favoris";
 "Hide" = "Masquer";
 "Add Favorite" = "Ajouter un Favori";
+
+/* Download */
+"Download" = "Télécharger";
+"Download Video" = "Télécharger la vidéo";
+"Filename" = "Nom du fichier";
+"Format" = "Format";
+"Downloading..." = "Téléchargement...";
+"Download Complete" = "Téléchargement terminé";
+"Close" = "Fermer";
+"Video Details" = "Détails de la vidéo";
