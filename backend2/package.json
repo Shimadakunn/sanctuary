@@ -2,8 +2,8 @@
   "name": "backend2",
   "module": "src/index.ts",
   "scripts": {
-    "start": "bun run src/index.ts",
-    "dev": "bun run --hot src/index.ts"
+    "start": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts"
   },
   "type": "module",
   "private": true,
@@ -15,7 +15,11 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@distube/ytdl-core": "^4.16.12",
+    "@hono/node-server": "^1.19.6",
     "hono": "^4.10.7",
+    "tsx": "^4.21.0",
+    "undici": "^7.16.0",
     "youtube-dl-exec": "^3.0.27"
   },
   "trustedDependencies": [
