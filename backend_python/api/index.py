@@ -3,6 +3,8 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import yt_dlp
 import os
+import tempfile
+import shutil
 
 app = FastAPI()
 
@@ -20,23 +22,28 @@ def get_download_link(request: DownloadRequest):
     """
     Extracts the direct download URL for the requested YouTube video.
     """
+    temp_cookie_file = None
     try:
-        # Locate the cookie file
-        # Script is in /api, and we moved the cookie file to /api/www.youtube.com_cookies.txt
+        # Locate the bundled cookie file
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        cookie_file = os.path.join(current_dir, 'www.youtube.com_cookies.txt')
-
-        # Verify file exists
-        if not os.path.exists(cookie_file):
-            print(f"⚠️ CRITICAL: Cookie file not found at: {cookie_file}")
-            # We continue, but it will likely fail
-            cookie_file = None
+        bundled_cookie_file = os.path.join(current_dir, 'www.youtube.com_cookies.txt')
+        
+        # Copy to temp file because Vercel file system is read-only and yt-dlp tries to write to the cookie file
+        if os.path.exists(bundled_cookie_file):
+            try:
+                # Create a temp file
+                fd, temp_cookie_file = tempfile.mkstemp(suffix=".txt", text=True)
+                os.close(fd)
+                # Copy content
+                shutil.copy(bundled_cookie_file, temp_cookie_file)
+                print(f"✅ Copied cookies to temp file: {temp_cookie_file}")
+            except Exception as e:
+                print(f"⚠️ Failed to copy cookie file: {e}")
+                temp_cookie_file = None
         else:
-            print(f"✅ Found cookie file at: {cookie_file}")
+            print(f"⚠️ CRITICAL: Cookie file not found at: {bundled_cookie_file}")
 
         # Configure yt-dlp options
-        # We prioritize 'best' which usually means best single file containing both video and audio
-        # because we cannot merge streams (no FFmpeg on standard Vercel runtime).
         ydl_opts = {
             'quiet': True,
             'no_warnings': True,
@@ -44,16 +51,13 @@ def get_download_link(request: DownloadRequest):
             'verbose': True, # Enable verbose logging to debug auth issues
         }
         
-        if cookie_file:
-            ydl_opts['cookiefile'] = cookie_file
+        if temp_cookie_file:
+            ydl_opts['cookiefile'] = temp_cookie_file
 
         if request.format == 'mp3':
-             # Requesting best audio. Usually returns m4a or webm. 
-             # Real MP3 conversion requires FFmpeg.
              ydl_opts['format'] = 'bestaudio/best'
         elif request.quality:
             if request.quality == '1080p':
-                # Try to get 1080p mp4 if available as single file (rare for YT), fallback to best
                 ydl_opts['format'] = 'best[height=1080][ext=mp4]/best[height>=720][ext=mp4]/best'
             elif request.quality == '720p':
                 ydl_opts['format'] = 'best[height=720][ext=mp4]/best'
@@ -80,9 +84,16 @@ def get_download_link(request: DownloadRequest):
             }
 
     except Exception as e:
-        # Include the error string in the response for easier debugging
         print(f"❌ Error processing request: {str(e)}")
         return JSONResponse(status_code=400, content={"error": str(e)})
+    finally:
+        # Cleanup temp file
+        if temp_cookie_file and os.path.exists(temp_cookie_file):
+            try:
+                os.remove(temp_cookie_file)
+                print(f"🧹 Cleaned up temp cookie file")
+            except:
+                pass
 
 if __name__ == "__main__":
     import uvicorn
