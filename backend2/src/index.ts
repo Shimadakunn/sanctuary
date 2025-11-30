@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { exec } from 'youtube-dl-exec';
+import youtubedl from 'youtube-dl-exec';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { existsSync } from 'node:fs';
@@ -30,6 +30,7 @@ app.post('/download', async (c) => {
       noCheckCertificates: true,
       noWarnings: true,
       preferFreeFormats: true,
+      noCacheDir: true,
     };
 
     if (targetFormat === 'mp3') {
@@ -58,7 +59,7 @@ bestaudio/best[height<=${quality.replace('p','')}]`;
     console.log(`Starting download for ${url} ...`);
     
     // Execute the download
-    await exec(url, flags);
+    await youtubedl.exec(url, flags);
 
     // Construct the expected final file path
     const filePath = join(tempDir, `${safeTitle}.${targetFormat}`);
