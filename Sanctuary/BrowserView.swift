@@ -854,6 +854,18 @@ struct WebViewWrapper: UIViewRepresentable {
                     if sourceURL.host == targetURL.host,
                        targetPathComponents.count < sourcePathComponents.count,
                        sourceURL.absoluteString != targetURL.absoluteString {
+                        
+                        // EXCEPTION: For YouTube, just BLOCK the redirect. Do NOT go back.
+                        // YouTube ads/scripts sometimes force a redirect to home (/) from /watch.
+                        // If we goBack(), we might loop. If we just cancel, we stay on the video.
+                        let isYouTube = sourceURL.host?.contains("youtube.com") == true || sourceURL.host == "youtu.be"
+                        
+                        if isYouTube {
+                            print("🚫 [Navigation Blocked] Prevented YouTube auto-redirect to home: \(targetURL.absoluteString)")
+                            decisionHandler(.cancel)
+                            return
+                        }
+
                         print("🚫 [Navigation Blocked] Suspicious backwards navigation from \(sourceURL.path) to \(targetURL.path)")
                         decisionHandler(.cancel)
 
