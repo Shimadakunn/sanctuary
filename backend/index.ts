@@ -15,13 +15,9 @@ let yt: Innertube;
 Platform.shim.eval = (data: any, env: any) => {
   const properties: string[] = [];
 
-  if (env.n) {
-    properties.push(`n: exportedVars.nFunction("${env.n}")`);
-  }
+  if (env.n) properties.push(`n: exportedVars.nFunction("${env.n}")`);
 
-  if (env.sig) {
-    properties.push(`sig: exportedVars.sigFunction("${env.sig}")`);
-  }
+  if (env.sig) properties.push(`sig: exportedVars.sigFunction("${env.sig}")`);
 
   const code = `${data.output}\nreturn { ${properties.join(", ")} }`;
 
@@ -34,9 +30,7 @@ async function initYouTube() {
     const originalConsoleWarn = console.warn;
     console.warn = (...args) => {
       // Filter out YouTubeJS parser warnings
-      if (args[0]?.includes?.("[YOUTUBEJS][Parser]")) {
-        return;
-      }
+      if (args[0]?.includes?.("[YOUTUBEJS][Parser]")) return;
       originalConsoleWarn(...args);
     };
 
@@ -62,13 +56,13 @@ app.get("/", (c) => {
   return c.json({
     message: "Video Downloader API",
     endpoints: {
-      download: "POST /api/download - Download a video by URL or ID",
+      download: "POST /download - Download a video by URL or ID",
     },
   });
 });
 
 // Video download endpoint
-app.post("/api/download", async (c) => {
+app.post("/download", async (c) => {
   try {
     const body = await c.req.json();
     const { url, format = "mp4", quality = "best" } = body;
@@ -79,13 +73,11 @@ app.post("/api/download", async (c) => {
     console.log("   Format:", format);
     console.log("   Quality:", quality);
 
-    if (!url) {
-      return c.json({ error: "URL is required" }, 400);
-    }
+    if (!url) return c.json({ error: "URL is required" }, 400);
 
     // Validate format
     const validFormats = ["mp4", "mp3"];
-    if (!validFormats.includes(format)) {
+    if (!validFormats.includes(format))
       return c.json(
         {
           error: "Invalid format",
@@ -93,7 +85,6 @@ app.post("/api/download", async (c) => {
         },
         400
       );
-    }
 
     // Extract video ID from URL or use as-is if it's already an ID
     let videoId = url;
