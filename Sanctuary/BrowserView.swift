@@ -834,14 +834,6 @@ struct WebViewWrapper: UIViewRepresentable {
                        webView.backForwardList.backList.contains(where: { $0.url == targetURL }) {
                         print("🚫 [Navigation Blocked] Cross-origin backwards redirect from \(sourceURL.host ?? "unknown") to \(targetURL.host ?? "unknown")")
                         decisionHandler(.cancel)
-
-                        // Go back since we're stuck on the ad site
-                        if webView.canGoBack {
-                            print("⬅️ [Auto-Back] Going back after blocking cross-origin backwards redirect")
-                            DispatchQueue.main.async {
-                                webView.goBack()
-                            }
-                        }
                         return
                     }
 
@@ -868,14 +860,6 @@ struct WebViewWrapper: UIViewRepresentable {
 
                         print("🚫 [Navigation Blocked] Suspicious backwards navigation from \(sourceURL.path) to \(targetURL.path)")
                         decisionHandler(.cancel)
-
-                        // Go back since we're stuck on the suspicious page
-                        if webView.canGoBack {
-                            print("⬅️ [Auto-Back] Going back after blocking suspicious backwards navigation")
-                            DispatchQueue.main.async {
-                                webView.goBack()
-                            }
-                        }
                         return
                     }
                 }
