@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { Innertube, Platform, UniversalCache } from "youtubei.js";
@@ -24,6 +25,17 @@ Platform.shim.eval = (data: any, env: any) => {
   return new Function(code)();
 };
 
+// Configuration for YouTube authentication
+// IMPORTANT: Update these tokens regularly (they expire after 12-24 hours)
+// Generate new tokens by running: node generate-tokens.js
+const YOUTUBE_CONFIG = {
+  // TODO: Update these tokens! Run: node generate-tokens.js
+  // PO Token (Proof of Origin) - Required to bypass YouTube bot detection
+  po_token: process.env.YOUTUBE_PO_TOKEN || "",
+  // Visitor Data - Required for identifying the session
+  visitor_data: process.env.YOUTUBE_VISITOR_DATA || "",
+};
+
 async function initYouTube() {
   if (!yt) {
     // Suppress parser warnings
@@ -34,19 +46,21 @@ async function initYouTube() {
       originalConsoleWarn(...args);
     };
 
-    const config: any = {
+    console.log(
+      "🔑 [BACKEND] Initializing YouTube client with tokens:",
+      YOUTUBE_CONFIG
+    );
+    console.log("🔑 [BACKEND] PO Token:", YOUTUBE_CONFIG.po_token);
+    console.log("🔑 [BACKEND] Visitor Data:", YOUTUBE_CONFIG.visitor_data);
+
+    yt = await Innertube.create({
       cache: new UniversalCache(false),
       generate_session_locally: true,
-      cookie: "CIqOuajr3PfzfBC5nvHR5pqRAxjMw_XR5pqRAw==",
-    };
-
-    yt = await Innertube.create(config);
-    console.log(
-      "🔥 YouTube client initialized successfully",
-      config.cookie,
-      config.visitor_data,
-      config.po_token
-    );
+      // po_token:
+      //   "MlOLWYKj_SbUKItlmoMjFwNpwPWwNV8YxU4j_5fF_d5wQ_TMrn-J-sTOZwlG6uk299_smdTyxk6FgQqNfdtMPnaLNAsNxFFgndIY7UuNBILTyFOvlA==",
+      // visitor_data:
+      //   "CgtoRU03ZW82ajZkayi64rvJBjInCgJGUhIhEh0SGwsMDg8QERITFBUWFxgZGhscHR4fICEiIyQlJiBIYt8CCtwCMTMuWVQ9d1phYW8xTUt2ejNwNXZqWHcwbnZ3WkdoV0tfQW1JSkZVSWx0eGw2YmJFaDZ0VVFCUm4zS21iMXhQZlJlNVdHYV9zeVo1dFppdExnazFnR1lhWV9ycU44Um5tdEpjeUd0dVF2cC00dFprX1JoN2RDM0JCQW4xdFpKY0k4UHVmdjk0R05NNEFTbzlpWFVkSDVQd0NnT1NqdE9USEpKdzM4eUczdDU3QTd1Um1aZ20yR3U1MHRCS0ZFc25KWTd1NmpIWVlkUXlzcWxhTXFmM3pQQnI0MTZVd3lqNmh0N3lQc0p5N0VsdVR1Wlh0S0w2WG9sazkzX1FvWXlWQ2s5ZDhwN1hyUUtTbGFiTUQ3QUxlcmt3cUMtMHBubk9YQkp0OFdXN3Vnd05GZXRiUS0xV0k4dVZWNW00ZTRpS3N0Zm9IbG8yblNyRWRieC0yRUl5M0dMZWtIbmdB",
+    });
   }
   return yt;
 }

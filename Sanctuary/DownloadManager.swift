@@ -47,7 +47,7 @@ class DownloadManager: ObservableObject {
         print("⬇️ [iOS] Starting download process for: \(url.absoluteString)")
         
         // 1. Request the direct download link from the backend
-        guard let apiUrl = URL(string: "https://sanctuary-378h.vercel.app/download") else {
+        guard let apiUrl = URL(string: "http://localhost:3000/download") else {
             throw URLError(.badURL)
         }
 
