@@ -50,6 +50,13 @@
 
 /* Startup Page */
 "Home" = "Home";
+"Open Last App" = "Open Last App";
+
+/* Theme */
+"Theme" = "Theme";
+"System" = "System";
+"Light" = "Light";
+"Dark" = "Dark";
 
 /* Default Websites */
 "YouTube" = "YouTube";
@@ -78,3 +85,33 @@
 "Download Complete" = "Download Complete";
 "Close" = "Close";
 "Video Details" = "Video Details";
+
+/* Premium */
+"Upgrade to Premium" = "Upgrade to Premium";
+"Ad-free, downloads & more" = "Ad-free, downloads & more";
+"Sanctuary Premium" = "Sanctuary Premium";
+"Unlock the full experience" = "Unlock the full experience";
+"Ad-Free Experience" = "Ad-Free Experience";
+"Browse without interruptions" = "Browse without interruptions";
+"Download Videos" = "Download Videos";
+"Save videos for offline viewing" = "Save videos for offline viewing";
+"Choose Launching App" = "Choose Launching App";
+"Set your favorite page as startup" = "Set your favorite page as startup";
+"Premium Feature" = "Premium Feature";
+"Get Premium" = "Get Premium";
+"Restore Purchases" = "Restore Purchases";
+"Terms" = "Terms";
+
+/* Subscription */
+"Subscription" = "Subscription";
+"Free Trial" = "Free Trial";
+"Free" = "Free";
+"Premium" = "Premium";
+"Your Subscription" = "Your Subscription";
+"Premium Benefits" = "Premium Benefits";
+"You're a Premium member!" = "You're a Premium member!";
+"Thank you for your support" = "Thank you for your support";
+"Subscribe for $1.99/month" = "Subscribe for $1.99/month";
+"Manage Subscription" = "Manage Subscription";
+"Dev Subscript" = "Dev Subscript";
+"Development Testing" = "Development Testing";

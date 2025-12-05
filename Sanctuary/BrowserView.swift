@@ -22,6 +22,16 @@ struct BrowserView: View {
     @State private var showAddFavoriteSheet = false
     @State private var showMenuSheet = false
     @State private var showDownloadSheet = false
+    @State private var showPremiumModal = false
+    @AppStorage("subscriptionStatus") private var subscriptionStatusRaw: String = SubscriptionStatus.free.rawValue
+
+    private var subscriptionStatus: SubscriptionStatus {
+        SubscriptionStatus(rawValue: subscriptionStatusRaw) ?? .free
+    }
+
+    private var isPremium: Bool {
+        subscriptionStatus == .premium || subscriptionStatus == .freeTrial
+    }
 
     var body: some View {
         ZStack {
@@ -156,13 +166,17 @@ struct BrowserView: View {
                         if let currentURL = webViewStore.webView?.url,
                            (currentURL.host?.contains("youtube.com") == true || currentURL.host == "youtu.be"),
                            currentURL.path.contains("watch") || currentURL.host == "youtu.be" {
-                            
+
                             Button(action: {
                                 withAnimation(.easeInOut(duration: 0.3)) {
                                     showMenuSheet = false
                                 }
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                    showDownloadSheet = true
+                                    if isPremium {
+                                        showDownloadSheet = true
+                                    } else {
+                                        showPremiumModal = true
+                                    }
                                 }
                             }) {
                                 HStack(spacing: 12) {
@@ -176,6 +190,12 @@ struct BrowserView: View {
                                         .foregroundColor(.primary)
 
                                     Spacer()
+
+                                    if !isPremium {
+                                        Image(systemName: "crown.fill")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(.orange)
+                                    }
                                 }
                                 .padding(.horizontal, 20)
                                 .padding(.vertical, 12)
@@ -284,6 +304,9 @@ struct BrowserView: View {
             if let url = webViewStore.webView?.url {
                 DownloadOptionsView(url: url, isPresented: $showDownloadSheet)
             }
+        }
+        .sheet(isPresented: $showPremiumModal) {
+            PremiumModalView()
         }
     }
 }

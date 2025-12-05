@@ -12,11 +12,18 @@ import AppTrackingTransparency
 @main
 struct SanctuaryApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @AppStorage("selectedTheme") private var selectedThemeRaw: String = AppTheme.system.rawValue
 
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .preferredColorScheme(getColorScheme())
         }
+    }
+
+    private func getColorScheme() -> ColorScheme? {
+        let theme = AppTheme(rawValue: selectedThemeRaw) ?? .system
+        return theme.colorScheme
     }
 }
 

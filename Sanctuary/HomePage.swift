@@ -74,6 +74,16 @@ struct HomePage: View {
     @State private var showHistoryView = false
     @State private var showFilesView = false
     @State private var showSettingsView = false
+    @State private var showPremiumModal = false
+    @AppStorage("subscriptionStatus") private var subscriptionStatusRaw: String = SubscriptionStatus.free.rawValue
+
+    private var subscriptionStatus: SubscriptionStatus {
+        SubscriptionStatus(rawValue: subscriptionStatusRaw) ?? .free
+    }
+
+    private var isPremium: Bool {
+        subscriptionStatus == .premium || subscriptionStatus == .freeTrial
+    }
 
     var body: some View {
         NavigationStack {
@@ -82,17 +92,26 @@ struct HomePage: View {
                     .ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    Spacer()
-
-                    // AdMob Medium Rectangle Banner Ad
-                    AdMobBannerView(
-                        adUnitID: "ca-app-pub-3940256099942544/2435281174",  // Test ad unit
-                        adSize: AdSizeMediumRectangle
-                    )
-                    .frame(height: 250)
-                    .padding(.horizontal, 20)
+                    // Premium Banner - Only show for non-premium users
+                    if !isPremium {
+                        PremiumBannerView(onTap: {
+                            showPremiumModal = true
+                        })
+                    }
 
                     Spacer()
+
+                    // AdMob Medium Rectangle Banner Ad - Only show for non-premium users
+                    if !isPremium {
+                        AdMobBannerView(
+                            adUnitID: "ca-app-pub-3940256099942544/2435281174",  // Test ad unit
+                            adSize: AdSizeMediumRectangle
+                        )
+                        .frame(height: 250)
+                        .padding(.horizontal, 20)
+
+                        Spacer()
+                    }
 
                     // Favorites Grid
                     HStack {
@@ -156,6 +175,9 @@ struct HomePage: View {
                 }
                 .navigationDestination(isPresented: $showSettingsView) {
                     SettingsView(favoritesManager: favoritesManager)
+                }
+                .sheet(isPresented: $showPremiumModal) {
+                    PremiumModalView()
                 }
             }
         }

@@ -15,9 +15,28 @@ struct SettingsView: View {
     @State private var showClearAllDataAlert = false
     @State private var appLockEnabled = UserDefaults.standard.bool(forKey: "appLockEnabled")
     @AppStorage("startupPageURL") private var startupPageURL: String = ""
+    @AppStorage("selectedTheme") private var selectedThemeRaw: String = AppTheme.system.rawValue
+    @AppStorage("subscriptionStatus") private var subscriptionStatusRaw: String = SubscriptionStatus.free.rawValue
 
     var body: some View {
         List {
+            // Subscription Section
+            Section(header: Text("Subscription".localized)) {
+                NavigationLink(destination: SubscriptionView()) {
+                    HStack {
+                        Text("Subscription".localized)
+                        Spacer()
+                        Text(getSubscriptionTitle())
+                            .foregroundColor(getSubscriptionColor())
+                            .lineLimit(1)
+                    }
+                }
+
+                NavigationLink(destination: DevSubscriptionView()) {
+                        Text("Dev Subscript".localized)
+                }
+            }
+
             // Preferences Section
             Section(header: Text("Preferences".localized)) {
                 NavigationLink(destination: StartupPageView(favoritesManager: favoritesManager)) {
@@ -25,6 +44,16 @@ struct SettingsView: View {
                         Text("Launching App".localized)
                         Spacer()
                         Text(getStartupPageTitle())
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+
+                NavigationLink(destination: ThemeView()) {
+                    HStack {
+                        Text("Theme".localized)
+                        Spacer()
+                        Text(getThemeTitle())
                             .foregroundColor(.secondary)
                             .lineLimit(1)
                     }
@@ -186,12 +215,32 @@ struct SettingsView: View {
             return "Home".localized
         }
 
+        // Check if it's the "Open Last App" option
+        if startupPageURL == "LAST_APP" {
+            return "Open Last App".localized
+        }
+
         // Find the favorite with matching URL
         if let favorite = favoritesManager.favorites.first(where: { $0.url == startupPageURL }) {
             return favorite.title
         }
 
         return "Home".localized
+    }
+
+    private func getThemeTitle() -> String {
+        let theme = AppTheme(rawValue: selectedThemeRaw) ?? .system
+        return theme.displayName
+    }
+
+    private func getSubscriptionTitle() -> String {
+        let status = SubscriptionStatus(rawValue: subscriptionStatusRaw) ?? .free
+        return status.displayName
+    }
+
+    private func getSubscriptionColor() -> Color {
+        let status = SubscriptionStatus(rawValue: subscriptionStatusRaw) ?? .free
+        return status.badgeColor
     }
 }
 

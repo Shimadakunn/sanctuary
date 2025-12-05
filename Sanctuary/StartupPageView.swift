@@ -10,7 +10,17 @@ internal import SwiftUI
 struct StartupPageView: View {
     @ObservedObject var favoritesManager: FavoritesManager
     @AppStorage("startupPageURL") private var startupPageURL: String = ""
+    @AppStorage("subscriptionStatus") private var subscriptionStatusRaw: String = SubscriptionStatus.free.rawValue
     @Environment(\.dismiss) private var dismiss
+    @State private var showPremiumModal = false
+
+    private var subscriptionStatus: SubscriptionStatus {
+        SubscriptionStatus(rawValue: subscriptionStatusRaw) ?? .free
+    }
+
+    private var isPremium: Bool {
+        subscriptionStatus == .premium || subscriptionStatus == .freeTrial
+    }
 
     var body: some View {
         List {
@@ -41,29 +51,93 @@ struct StartupPageView: View {
                 }
             }
 
-            ForEach(favoritesManager.favorites) { favorite in
+            if isPremium {
                 Button(action: {
-                    startupPageURL = favorite.url
+                    startupPageURL = "LAST_APP"
                     dismiss()
                 }) {
                     HStack(spacing: 12) {
-                        FaviconView(faviconURL: favorite.faviconURL)
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.purple.opacity(0.2))
+                                .frame(width: 40, height: 40)
 
-                        Text(favorite.title)
+                            Image(systemName: "clock.arrow.circlepath")
+                                .font(.system(size: 18))
+                                .foregroundColor(.purple)
+                        }
+
+                        Text("Open Last App".localized)
                             .foregroundColor(.primary)
 
                         Spacer()
 
-                        if startupPageURL == favorite.url {
+                        if startupPageURL == "LAST_APP" {
                             Image(systemName: "checkmark")
                                 .foregroundColor(.blue)
                         }
+                    }
+                }
+
+                ForEach(favoritesManager.favorites) { favorite in
+                    Button(action: {
+                        startupPageURL = favorite.url
+                        dismiss()
+                    }) {
+                        HStack(spacing: 12) {
+                            FaviconView(faviconURL: favorite.faviconURL)
+
+                            Text(favorite.title)
+                                .foregroundColor(.primary)
+
+                            Spacer()
+
+                            if startupPageURL == favorite.url {
+                                Image(systemName: "checkmark")
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Premium feature locked for free users
+                Button(action: {
+                    showPremiumModal = true
+                }) {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.orange.opacity(0.2))
+                                .frame(width: 40, height: 40)
+
+                            Image(systemName: "crown.fill")
+                                .font(.system(size: 18))
+                                .foregroundColor(.orange)
+                        }
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Choose Launching App".localized)
+                                .foregroundColor(.primary)
+                                .font(.system(size: 16))
+                            Text("Premium Feature".localized)
+                                .foregroundColor(.secondary)
+                                .font(.system(size: 12))
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "lock.fill")
+                            .foregroundColor(.orange)
+                            .font(.system(size: 14))
                     }
                 }
             }
         }
         .navigationTitle("Launching App".localized)
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showPremiumModal) {
+            PremiumModalView()
+        }
     }
 }
 

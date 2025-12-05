@@ -14,7 +14,16 @@ struct ContentView: View {
     @State private var previousScenePhase: ScenePhase = .active
     @State private var hasLaunchedStartupPage = false
     @AppStorage("startupPageURL") private var startupPageURL: String = ""
+    @AppStorage("subscriptionStatus") private var subscriptionStatusRaw: String = SubscriptionStatus.free.rawValue
     @Environment(\.scenePhase) private var scenePhase
+
+    private var subscriptionStatus: SubscriptionStatus {
+        SubscriptionStatus(rawValue: subscriptionStatusRaw) ?? .free
+    }
+
+    private var isPremium: Bool {
+        subscriptionStatus == .premium || subscriptionStatus == .freeTrial
+    }
 
     var body: some View {
         ZStack {
@@ -92,10 +101,27 @@ struct ContentView: View {
 
         hasLaunchedStartupPage = true
 
+        // Reset startup page to Home for free users
+        if !isPremium && !startupPageURL.isEmpty {
+            print("⚠️ [Startup] Resetting startup page to Home for free user")
+            startupPageURL = ""
+        }
+
         // If startupPageURL is not empty, navigate to it immediately
         if !startupPageURL.isEmpty {
-            browserManager.navigateToURL(startupPageURL)
-            print("🚀 [Startup] Launched startup page: \(startupPageURL)")
+            // Check if it's the "Open Last App" option
+            if startupPageURL == "LAST_APP" {
+                // Get the last history item
+                if let lastHistoryItem = browserManager.historyManager.history.first {
+                    browserManager.navigateToURL(lastHistoryItem.url)
+                    print("🚀 [Startup] Launched last app: \(lastHistoryItem.url)")
+                } else {
+                    print("🚀 [Startup] No history available, staying on home")
+                }
+            } else {
+                browserManager.navigateToURL(startupPageURL)
+                print("🚀 [Startup] Launched startup page: \(startupPageURL)")
+            }
         }
     }
 }
