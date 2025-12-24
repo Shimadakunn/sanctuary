@@ -7,11 +7,20 @@
 
 internal import SwiftUI
 import AVKit
+import AVFoundation
 
 struct AudioPlayer: UIViewControllerRepresentable {
     let url: URL
 
     func makeUIViewController(context: Context) -> AVPlayerViewController {
+        // Ensure audio session is active for background playback
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
+            try audioSession.setActive(true)
+        } catch {
+            print("❌ [Audio] Failed to activate audio session: \(error.localizedDescription)")
+        }
+
         let player = AVPlayer(url: url)
         let controller = AVPlayerViewController()
         controller.player = player

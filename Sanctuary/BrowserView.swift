@@ -388,6 +388,17 @@ struct WebViewWrapper: UIViewRepresentable {
         let configuration = WKWebViewConfiguration()
         configuration.allowsInlineMediaPlayback = true
         configuration.mediaTypesRequiringUserActionForPlayback = []
+        configuration.allowsAirPlayForMediaPlayback = true
+        configuration.allowsPictureInPictureMediaPlayback = true
+
+        // Inject visibility override script to enable background playback
+        // This must run at document start, before page scripts can detect visibility
+        let visibilityScript = WKUserScript(
+            source: BackgroundPlaybackManager.visibilityOverrideScript,
+            injectionTime: .atDocumentStart,
+            forMainFrameOnly: false  // Inject in iframes too
+        )
+        configuration.userContentController.addUserScript(visibilityScript)
 
         // Add message handler for click tracking
         configuration.userContentController.add(context.coordinator, name: "clickHandler")
@@ -708,6 +719,8 @@ struct WebViewWrapper: UIViewRepresentable {
 
         DispatchQueue.main.async {
             webViewStore.webView = webView
+            // Register with background playback manager
+            BackgroundPlaybackManager.shared.webView = webView
         }
 
         return webView

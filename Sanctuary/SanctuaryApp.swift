@@ -8,6 +8,7 @@
 internal import SwiftUI
 import GoogleMobileAds
 import AppTrackingTransparency
+import AVFoundation
 
 @main
 struct SanctuaryApp: App {
@@ -31,6 +32,12 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     static var orientationLock = UIInterfaceOrientationMask.portrait
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        // Configure audio session for background playback
+        configureAudioSession()
+
+        // Initialize background playback manager
+        _ = BackgroundPlaybackManager.shared
+
         // Initialize Google Mobile Ads SDK
         MobileAds.shared.start(completionHandler: nil)
 
@@ -47,6 +54,17 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         }
 
         return true
+    }
+
+    private func configureAudioSession() {
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
+            try audioSession.setCategory(.playback, mode: .moviePlayback, options: [])
+            try audioSession.setActive(true)
+            print("🔊 [Audio] Audio session configured for background playback")
+        } catch {
+            print("❌ [Audio] Failed to configure audio session: \(error.localizedDescription)")
+        }
     }
 
     func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
