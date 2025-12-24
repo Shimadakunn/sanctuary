@@ -717,6 +717,11 @@ struct WebViewWrapper: UIViewRepresentable {
         webView.allowsBackForwardNavigationGestures = false
         webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
 
+        // Set background color to match system theme (prevents white flash)
+        webView.isOpaque = false
+        webView.backgroundColor = .systemBackground
+        webView.scrollView.backgroundColor = .systemBackground
+
         DispatchQueue.main.async {
             webViewStore.webView = webView
             // Register with background playback manager
@@ -799,6 +804,13 @@ struct WebViewWrapper: UIViewRepresentable {
 
         func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
             print("🔍 [Navigation Policy] Type: \(navigationAction.navigationType.rawValue), URL: \(navigationAction.request.url?.absoluteString ?? "nil"), TargetFrame: \(navigationAction.targetFrame != nil ? "present" : "nil"), SourceFrame: \(navigationAction.sourceFrame.request.url?.absoluteString ?? "nil")")
+
+            // Block ALL programmatic navigations when app is in background (to prevent sites from redirecting away from video)
+            if BackgroundPlaybackManager.shared.isInBackground && navigationAction.navigationType != .backForward {
+                print("🚫 [Background Navigation Blocked] Blocking navigation while in background: \(navigationAction.request.url?.absoluteString ?? "nil")")
+                decisionHandler(.cancel)
+                return
+            }
 
             // Always allow user-initiated back/forward navigation
             if navigationAction.navigationType == .backForward {

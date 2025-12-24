@@ -13,6 +13,9 @@ import UIKit
 class BackgroundPlaybackManager {
     static let shared = BackgroundPlaybackManager()
 
+    /// Flag to indicate app is in background - used to block navigations
+    var isInBackground = false
+
     weak var webView: WKWebView? {
         didSet {
             // Inject visibility override script when webview is set
@@ -35,6 +38,15 @@ class BackgroundPlaybackManager {
         if (window.__visibilityOverrideInjected) return;
         window.__visibilityOverrideInjected = true;
 
+        // Events to block that websites use to detect background state
+        var blockedEvents = [
+            'visibilitychange',
+            'blur',
+            'pagehide',
+            'freeze',
+            'webkitvisibilitychange'
+        ];
+
         // Override document.hidden
         Object.defineProperty(document, 'hidden', {
             get: function() { return false; },
@@ -47,31 +59,53 @@ class BackgroundPlaybackManager {
             configurable: true
         });
 
-        // Block visibilitychange events
+        // Override webkitHidden (older browsers)
+        Object.defineProperty(document, 'webkitHidden', {
+            get: function() { return false; },
+            configurable: true
+        });
+
+        // Block events on document
         var originalAddEventListener = document.addEventListener;
         document.addEventListener = function(type, listener, options) {
-            if (type === 'visibilitychange') {
-                console.log('[Sanctuary] Blocked visibilitychange listener');
+            if (blockedEvents.includes(type)) {
+                console.log('[Sanctuary] Blocked document.' + type + ' listener');
                 return;
             }
             return originalAddEventListener.call(this, type, listener, options);
         };
 
-        // Also override on window
+        // Block events on window
         var originalWindowAddEventListener = window.addEventListener;
         window.addEventListener = function(type, listener, options) {
-            if (type === 'visibilitychange') {
-                console.log('[Sanctuary] Blocked window visibilitychange listener');
+            if (blockedEvents.includes(type)) {
+                console.log('[Sanctuary] Blocked window.' + type + ' listener');
                 return;
             }
             return originalWindowAddEventListener.call(this, type, listener, options);
         };
 
-        // Prevent pagehide/pageshow from being used to detect background
+        // Override document.hasFocus to always return true
         Object.defineProperty(document, 'hasFocus', {
             value: function() { return true; },
-            configurable: true
+            configurable: true,
+            writable: true
         });
+
+        // Override window.focus state
+        Object.defineProperty(window, 'onfocus', { value: null, writable: true });
+        Object.defineProperty(window, 'onblur', { value: null, writable: true });
+        Object.defineProperty(document, 'onfocus', { value: null, writable: true });
+        Object.defineProperty(document, 'onblur', { value: null, writable: true });
+
+        // Block history-based navigation detection
+        var originalPushState = history.pushState;
+        var originalReplaceState = history.replaceState;
+        window.__sanctuaryAllowNavigation = true;
+
+        // Intercept location changes during background
+        var originalLocationAssign = window.location.assign;
+        var originalLocationReplace = window.location.replace;
 
         console.log('[Sanctuary] Visibility override injected - background playback enabled');
     })();
@@ -106,6 +140,14 @@ class BackgroundPlaybackManager {
             object: nil
         )
 
+        // App returning to foreground
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appWillEnterForeground),
+            name: UIApplication.willEnterForegroundNotification,
+            object: nil
+        )
+
         // Audio interruption handling
         NotificationCenter.default.addObserver(
             self,
@@ -117,8 +159,14 @@ class BackgroundPlaybackManager {
 
     @objc private func appWillResignActive() {
         print("🎬 [Background] App will resign active - preparing for background playback")
+        isInBackground = true
         // Ensure audio session is active
         activateAudioSession()
+    }
+
+    @objc private func appWillEnterForeground() {
+        print("🎬 [Background] App will enter foreground")
+        isInBackground = false
     }
 
     private var resumeAttempts = 0
@@ -126,6 +174,7 @@ class BackgroundPlaybackManager {
 
     @objc private func appDidEnterBackground() {
         print("🎬 [Background] App did enter background - resuming playback")
+        isInBackground = true
         resumeAttempts = 0
         startResumeLoop()
     }
