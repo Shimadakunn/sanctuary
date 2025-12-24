@@ -17,6 +17,10 @@ struct SettingsView: View {
     @AppStorage("startupPageURL") private var startupPageURL: String = ""
     @AppStorage("selectedTheme") private var selectedThemeRaw: String = AppTheme.system.rawValue
     @AppStorage("subscriptionStatus") private var subscriptionStatusRaw: String = SubscriptionStatus.free.rawValue
+    @AppStorage("devModeEnabled") private var devModeEnabled: Bool = false
+    @State private var showDevModeModal = false
+    @State private var devModeCode = ""
+    @State private var showInvalidCodeAlert = false
 
     var body: some View {
         List {
@@ -32,8 +36,10 @@ struct SettingsView: View {
                     }
                 }
 
-                NavigationLink(destination: DevSubscriptionView()) {
+                if devModeEnabled {
+                    NavigationLink(destination: DevSubscriptionView()) {
                         Text("Dev Subscript".localized)
+                    }
                 }
             }
 
@@ -131,6 +137,25 @@ struct SettingsView: View {
                 }
 
                 Button(action: {
+                    showDevModeModal = true
+                    devModeCode = ""
+                }) {
+                    HStack {
+                        Image(systemName: devModeEnabled ? "lock.open.fill" : "lock.fill")
+                            .foregroundColor(devModeEnabled ? .green : .blue)
+                            .frame(width: 24)
+                        Text("Dev Mode".localized)
+                            .foregroundColor(.primary)
+                        Spacer()
+                        if devModeEnabled {
+                            Text("Enabled".localized)
+                                .font(.system(size: 14))
+                                .foregroundColor(.green)
+                        }
+                    }
+                }
+
+                Button(action: {
                     // Open GitHub or website
                 }) {
                     HStack {
@@ -172,6 +197,19 @@ struct SettingsView: View {
             }
         } message: {
             Text("Clear All Website Data Alert Message".localized)
+        }
+        .sheet(isPresented: $showDevModeModal) {
+            DevModeCodeInputView(
+                code: $devModeCode,
+                isPresented: $showDevModeModal,
+                devModeEnabled: $devModeEnabled,
+                showInvalidCodeAlert: $showInvalidCodeAlert
+            )
+        }
+        .alert("Invalid Code".localized, isPresented: $showInvalidCodeAlert) {
+            Button("OK".localized, role: .cancel) { }
+        } message: {
+            Text("The code you entered is incorrect. Please try again.".localized)
         }
     }
 
