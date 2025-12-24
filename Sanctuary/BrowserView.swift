@@ -8,6 +8,7 @@
 internal import SwiftUI
 import WebKit
 import Combine
+import AVKit
 
 struct BrowserView: View {
     let url: URL?
@@ -162,6 +163,33 @@ struct BrowserView: View {
                             .padding(.vertical, 12)
                             .background(Color.clear)
                         }
+
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                showMenuSheet = false
+                            }
+                            BackgroundPlaybackManager.shared.startPictureInPicture()
+                        }) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "pip.fill")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(.primary)
+                                    .frame(width: 24)
+
+                                Text("Miniplayer".localized)
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.primary)
+
+                                Spacer()
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 12)
+                            .background(Color.clear)
+                        }
+
+                        AirPlayButton()
+                            .frame(height: 44)
+                            .padding(.horizontal, 20)
 
                         if let currentURL = webViewStore.webView?.url,
                            (currentURL.host?.contains("youtube.com") == true || currentURL.host == "youtu.be"),
@@ -1183,4 +1211,70 @@ struct AddFavoriteView: View {
             }
         }
     }
+}
+
+// MARK: - AirPlay Button
+struct AirPlayButton: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView {
+        let containerView = UIView()
+        containerView.backgroundColor = .clear
+
+        let routePickerView = AVRoutePickerView()
+        routePickerView.tintColor = UIColor.label
+        routePickerView.activeTintColor = UIColor.systemBlue
+        routePickerView.prioritizesVideoDevices = true
+
+        // Create the button layout with icon and text
+        let stackView = UIStackView()
+        stackView.axis = .horizontal
+        stackView.spacing = 12
+        stackView.alignment = .center
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+
+        // AirPlay icon
+        let iconImageView = UIImageView(image: UIImage(systemName: "airplayvideo"))
+        iconImageView.tintColor = .label
+        iconImageView.contentMode = .scaleAspectFit
+        iconImageView.translatesAutoresizingMaskIntoConstraints = false
+        iconImageView.widthAnchor.constraint(equalToConstant: 24).isActive = true
+        iconImageView.heightAnchor.constraint(equalToConstant: 24).isActive = true
+
+        // Label
+        let label = UILabel()
+        label.text = NSLocalizedString("Cast", comment: "")
+        label.font = .systemFont(ofSize: 16)
+        label.textColor = .label
+
+        stackView.addArrangedSubview(iconImageView)
+        stackView.addArrangedSubview(label)
+
+        containerView.addSubview(stackView)
+        containerView.addSubview(routePickerView)
+
+        // Position the stack view
+        NSLayoutConstraint.activate([
+            stackView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            stackView.centerYAnchor.constraint(equalTo: containerView.centerYAnchor)
+        ])
+
+        // Make route picker cover entire container but invisible (tap area)
+        routePickerView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            routePickerView.topAnchor.constraint(equalTo: containerView.topAnchor),
+            routePickerView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
+            routePickerView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            routePickerView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor)
+        ])
+
+        // Hide the default AirPlay button but keep it tappable
+        for subview in routePickerView.subviews {
+            if let button = subview as? UIButton {
+                button.alpha = 0.01 // Nearly invisible but still tappable
+            }
+        }
+
+        return containerView
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {}
 }

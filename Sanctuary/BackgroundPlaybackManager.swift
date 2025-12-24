@@ -298,6 +298,80 @@ class BackgroundPlaybackManager {
         }
     }
 
+    /// Start Picture-in-Picture mode for the current video
+    func startPictureInPicture() {
+        print("🎬 [PiP] Starting Picture-in-Picture mode...")
+
+        let pipScript = """
+        (function() {
+            // Find all video elements
+            var videos = document.querySelectorAll('video');
+            var pipStarted = false;
+
+            // Try main document videos first
+            for (var i = 0; i < videos.length; i++) {
+                var video = videos[i];
+                // Check if video has content and is visible
+                if (video.readyState >= 2 && video.videoWidth > 0) {
+                    // Make sure video is playing
+                    if (video.paused) {
+                        video.play();
+                    }
+                    // Request PiP
+                    if (document.pictureInPictureEnabled && !document.pictureInPictureElement) {
+                        video.requestPictureInPicture().then(function() {
+                            console.log('[Sanctuary] PiP started successfully');
+                        }).catch(function(e) {
+                            console.log('[Sanctuary] PiP failed: ' + e.message);
+                        });
+                        pipStarted = true;
+                        break;
+                    }
+                }
+            }
+
+            // Try iframes if no video found in main document
+            if (!pipStarted) {
+                var iframes = document.querySelectorAll('iframe');
+                for (var j = 0; j < iframes.length; j++) {
+                    try {
+                        var iframeDoc = iframes[j].contentDocument || iframes[j].contentWindow.document;
+                        var iframeVideos = iframeDoc.querySelectorAll('video');
+                        for (var k = 0; k < iframeVideos.length; k++) {
+                            var iframeVideo = iframeVideos[k];
+                            if (iframeVideo.readyState >= 2 && iframeVideo.videoWidth > 0) {
+                                if (iframeVideo.paused) {
+                                    iframeVideo.play();
+                                }
+                                if (iframeDoc.pictureInPictureEnabled && !iframeDoc.pictureInPictureElement) {
+                                    iframeVideo.requestPictureInPicture();
+                                    pipStarted = true;
+                                    break;
+                                }
+                            }
+                        }
+                    } catch(e) {
+                        // Cross-origin iframe
+                    }
+                    if (pipStarted) break;
+                }
+            }
+
+            return pipStarted;
+        })();
+        """
+
+        DispatchQueue.main.async { [weak self] in
+            self?.webView?.evaluateJavaScript(pipScript) { result, error in
+                if let error = error {
+                    print("❌ [PiP] JavaScript error: \(error.localizedDescription)")
+                } else if let started = result as? Bool {
+                    print("🎬 [PiP] Picture-in-Picture \(started ? "started" : "failed - no video found")")
+                }
+            }
+        }
+    }
+
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
