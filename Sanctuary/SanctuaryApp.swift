@@ -39,7 +39,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         _ = BackgroundPlaybackManager.shared
 
         // Initialize Google Mobile Ads SDK
-        MobileAds.shared.start(completionHandler: nil)
+        MobileAds.shared.start { _ in
+            // Load app open ad after SDK is ready
+            AppOpenAdManager.shared.loadAd()
+        }
 
         // Initialize AdBlockManager to start loading/caching filter lists
         _ = AdBlockManager.shared

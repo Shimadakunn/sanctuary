@@ -68,6 +68,12 @@ struct ContentView: View {
         .onAppear {
             checkLockStatus()
             launchStartupPage()
+            // Show app open ad for free users (with slight delay to ensure UI is ready)
+            if !isPremium {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    AppOpenAdManager.shared.showAdIfAvailable()
+                }
+            }
         }
         .onChange(of: isUnlocked) { _, newValue in
             if newValue {
