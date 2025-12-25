@@ -75,6 +75,7 @@ struct HomePage: View {
     @State private var showFilesView = false
     @State private var showSettingsView = false
     @State private var showPremiumModal = false
+    @State private var keyboardHeight: CGFloat = 0
     @AppStorage("subscriptionStatus") private var subscriptionStatusRaw: String = SubscriptionStatus.free.rawValue
 
     private var subscriptionStatus: SubscriptionStatus {
@@ -157,6 +158,19 @@ struct HomePage: View {
                     SearchBar(text: $searchText, onSubmit: onSubmit)
                         .padding(.horizontal, 20)
                         .padding(.bottom, 8)
+                }
+                .padding(.bottom, keyboardHeight)
+                .animation(.easeOut(duration: 0.25), value: keyboardHeight)
+                .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
+                    if let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
+                        let bottomSafeArea = UIApplication.shared.connectedScenes
+                            .compactMap { $0 as? UIWindowScene }
+                            .first?.windows.first?.safeAreaInsets.bottom ?? 0
+                        keyboardHeight = keyboardFrame.height - bottomSafeArea
+                    }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+                    keyboardHeight = 0
                 }
                 .navigationDestination(isPresented: $showManageView) {
                     ManageFavoritesView(favoritesManager: favoritesManager, isPresented: $showManageView) { url in
@@ -808,6 +822,7 @@ struct HistoryView: View {
     @ObservedObject var historyManager: HistoryManager
     let onVisit: (String) -> Void
     @State private var searchText: String = ""
+    @State private var keyboardHeight: CGFloat = 0
 
     private var filteredHistory: [(String, [HistoryItem])] {
         let grouped = historyManager.groupedHistory()
@@ -866,6 +881,19 @@ struct HistoryView: View {
             SearchBar(text: $searchText, onSubmit: {})
                 .padding(.horizontal, 20)
                 .padding(.bottom, 8)
+        }
+        .padding(.bottom, keyboardHeight)
+        .animation(.easeOut(duration: 0.25), value: keyboardHeight)
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
+            if let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
+                let bottomSafeArea = UIApplication.shared.connectedScenes
+                    .compactMap { $0 as? UIWindowScene }
+                    .first?.windows.first?.safeAreaInsets.bottom ?? 0
+                keyboardHeight = keyboardFrame.height - bottomSafeArea
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            keyboardHeight = 0
         }
         .navigationTitle("History".localized)
         .navigationBarTitleDisplayMode(.inline)
