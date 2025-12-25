@@ -8,7 +8,12 @@ app.use("/*", cors());
 
 type Format = "video" | "audio";
 type Quality = "high" | "mid" | "low";
-type DownloadStatus = "pending" | "downloading" | "processing" | "completed" | "error";
+type DownloadStatus =
+  | "pending"
+  | "downloading"
+  | "processing"
+  | "completed"
+  | "error";
 
 interface DownloadRequest {
   url: string;
@@ -142,16 +147,23 @@ app.post("/start", async (c) => {
 
   if (!url || !format || !quality) {
     console.log(`❌ [${sessionId.slice(0, 8)}] Error: Missing required fields`);
-    return c.json({ error: "Missing required fields: url, format, quality" }, 400);
+    return c.json(
+      { error: "Missing required fields: url, format, quality" },
+      400
+    );
   }
 
   if (!["video", "audio"].includes(format)) {
-    console.log(`❌ [${sessionId.slice(0, 8)}] Error: Invalid format "${format}"`);
+    console.log(
+      `❌ [${sessionId.slice(0, 8)}] Error: Invalid format "${format}"`
+    );
     return c.json({ error: "Format must be 'video' or 'audio'" }, 400);
   }
 
   if (!["high", "mid", "low"].includes(quality)) {
-    console.log(`❌ [${sessionId.slice(0, 8)}] Error: Invalid quality "${quality}"`);
+    console.log(
+      `❌ [${sessionId.slice(0, 8)}] Error: Invalid quality "${quality}"`
+    );
     return c.json({ error: "Quality must be 'high', 'mid', or 'low'" }, 400);
   }
 
@@ -173,7 +185,9 @@ app.post("/start", async (c) => {
       console.log(`📝 [${sessionId.slice(0, 8)}] Video title: "${videoTitle}"`);
     } catch {
       videoTitle = "download";
-      console.log(`⚠️ [${sessionId.slice(0, 8)}] Could not fetch title, using default`);
+      console.log(
+        `⚠️ [${sessionId.slice(0, 8)}] Could not fetch title, using default`
+      );
     }
   }
 
@@ -226,15 +240,32 @@ app.post("/start", async (c) => {
         for (const line of lines) {
           const rawProgress = parseProgress(line);
           if (rawProgress !== null) {
-            const overallProgress = calculateOverallProgress(rawProgress, progressTracker, isAudioOnly);
+            const overallProgress = calculateOverallProgress(
+              rawProgress,
+              progressTracker,
+              isAudioOnly
+            );
             session.progress = overallProgress;
             if (overallProgress < 90) {
               session.status = "downloading";
             }
-            console.log(`📊 [${sessionId.slice(0, 8)}] Progress: ${overallProgress.toFixed(1)}% (raw: ${rawProgress.toFixed(1)}%, phase: ${progressTracker.phase})`);
+            console.log(
+              `📊 [${sessionId.slice(
+                0,
+                8
+              )}] Progress: ${overallProgress.toFixed(
+                1
+              )}% (raw: ${rawProgress.toFixed(1)}%, phase: ${
+                progressTracker.phase
+              })`
+            );
           }
           // Check for post-processing
-          if (line.includes("[Merger]") || line.includes("[ExtractAudio]") || line.includes("[ffmpeg]")) {
+          if (
+            line.includes("[Merger]") ||
+            line.includes("[ExtractAudio]") ||
+            line.includes("[ffmpeg]")
+          ) {
             session.status = "processing";
             session.progress = 95;
             console.log(`⚙️ [${sessionId.slice(0, 8)}] Processing/Merging...`);
@@ -247,20 +278,29 @@ app.post("/start", async (c) => {
 
       if (exitCode !== 0) {
         const stderr = await new Response(proc.stderr).text();
-        console.log(`❌ [${sessionId.slice(0, 8)}] yt-dlp failed with exit code ${exitCode}`);
+        console.log(
+          `❌ [${sessionId.slice(
+            0,
+            8
+          )}] yt-dlp failed with exit code ${exitCode}`
+        );
         console.log(`   Error: ${stderr.slice(0, 500)}`);
         session.status = "error";
         session.error = stderr.slice(0, 200);
         return;
       }
 
-      console.log(`✅ [${sessionId.slice(0, 8)}] yt-dlp completed in ${downloadTime}s`);
+      console.log(
+        `✅ [${sessionId.slice(0, 8)}] yt-dlp completed in ${downloadTime}s`
+      );
 
       const file = Bun.file(expectedFile);
       const exists = await file.exists();
 
       if (!exists) {
-        console.log(`❌ [${sessionId.slice(0, 8)}] Error: Output file not found`);
+        console.log(
+          `❌ [${sessionId.slice(0, 8)}] Error: Output file not found`
+        );
         session.status = "error";
         session.error = "File not found after download";
         return;
@@ -311,7 +351,10 @@ app.get("/file/:id", async (c) => {
   }
 
   if (session.status !== "completed") {
-    return c.json({ error: "Download not completed", status: session.status }, 400);
+    return c.json(
+      { error: "Download not completed", status: session.status },
+      400
+    );
   }
 
   const file = Bun.file(session.filePath);
@@ -323,7 +366,9 @@ app.get("/file/:id", async (c) => {
 
   const contentType = session.format === "audio" ? "audio/mpeg" : "video/mp4";
 
-  console.log(`📤 [${sessionId.slice(0, 8)}] Streaming file: "${session.filename}"`);
+  console.log(
+    `📤 [${sessionId.slice(0, 8)}] Streaming file: "${session.filename}"`
+  );
 
   // Clean up file and session after 60 seconds
   setTimeout(async () => {
@@ -349,7 +394,8 @@ app.get("/health", (c) => c.json({ status: "ok" }));
 
 export default {
   port: 3000,
+  hostname: "0.0.0.0",
   fetch: app.fetch,
 };
 
-console.log("Server running on http://localhost:3000");
+console.log("Server running on http://0.0.0.0:3000");

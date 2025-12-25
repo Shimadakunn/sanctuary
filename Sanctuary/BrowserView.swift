@@ -833,11 +833,27 @@ struct WebViewWrapper: UIViewRepresentable {
         func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
             print("🔍 [Navigation Policy] Type: \(navigationAction.navigationType.rawValue), URL: \(navigationAction.request.url?.absoluteString ?? "nil"), TargetFrame: \(navigationAction.targetFrame != nil ? "present" : "nil"), SourceFrame: \(navigationAction.sourceFrame.request.url?.absoluteString ?? "nil")")
 
-            // Block ALL programmatic navigations when app is in background (to prevent sites from redirecting away from video)
-            if BackgroundPlaybackManager.shared.isInBackground && navigationAction.navigationType != .backForward {
-                print("🚫 [Background Navigation Blocked] Blocking navigation while in background: \(navigationAction.request.url?.absoluteString ?? "nil")")
-                decisionHandler(.cancel)
-                return
+            // Block only automatic redirects when app is truly in background
+            // Allow: user-initiated navigations, initial page loads, etc.
+            if BackgroundPlaybackManager.shared.isInBackground {
+                let isUserInitiated = navigationAction.navigationType == .linkActivated ||
+                                     navigationAction.navigationType == .formSubmitted ||
+                                     navigationAction.navigationType == .formResubmitted ||
+                                     navigationAction.navigationType == .backForward
+
+                // Check if this is an initial page load (no previous URL in webview)
+                let currentURLString = webView.url?.absoluteString ?? ""
+                let isInitialLoad = currentURLString.isEmpty || currentURLString == "about:blank"
+
+                // Check if source frame has no URL (means it's a fresh navigation, not a redirect)
+                let sourceURLString = navigationAction.sourceFrame.request.url?.absoluteString ?? ""
+                let isFreshNavigation = sourceURLString.isEmpty || sourceURLString == "about:blank"
+
+                if !isUserInitiated && !isInitialLoad && !isFreshNavigation {
+                    print("🚫 [Background Navigation Blocked] Blocking automatic redirect while in background: \(navigationAction.request.url?.absoluteString ?? "nil")")
+                    decisionHandler(.cancel)
+                    return
+                }
             }
 
             // Always allow user-initiated back/forward navigation

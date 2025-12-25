@@ -148,6 +148,14 @@ class BackgroundPlaybackManager {
             object: nil
         )
 
+        // App became active (fully in foreground)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appDidBecomeActive),
+            name: UIApplication.didBecomeActiveNotification,
+            object: nil
+        )
+
         // Audio interruption handling
         NotificationCenter.default.addObserver(
             self,
@@ -166,6 +174,11 @@ class BackgroundPlaybackManager {
 
     @objc private func appWillEnterForeground() {
         print("🎬 [Background] App will enter foreground")
+        isInBackground = false
+    }
+
+    @objc private func appDidBecomeActive() {
+        print("🎬 [Background] App did become active")
         isInBackground = false
     }
 

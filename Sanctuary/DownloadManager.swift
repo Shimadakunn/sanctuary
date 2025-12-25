@@ -24,7 +24,7 @@ class DownloadManager: ObservableObject {
     static let shared = DownloadManager()
 
     // Configure your backend URL here
-    private let backendURL = "http://localhost:3000"
+    private let backendURL = "http://192.168.1.124:3000"
 
     @Published var currentProgress: Double = 0
     @Published var currentStatus: String = ""
