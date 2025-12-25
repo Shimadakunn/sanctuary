@@ -8,140 +8,184 @@
 import Foundation
 import Combine
 
-struct VideoInfoResponse: Codable {
-    let title: String?
-    let url: String
-    let thumbnail: String?
+struct StartDownloadResponse: Codable {
+    let sessionId: String
+    let filename: String
+}
+
+struct ProgressResponse: Codable {
+    let status: String
+    let progress: Double
+    let filename: String
+    let error: String?
 }
 
 class DownloadManager: ObservableObject {
     static let shared = DownloadManager()
 
+    // Configure your backend URL here
+    private let backendURL = "http://localhost:3000"
+
+    @Published var currentProgress: Double = 0
+    @Published var currentStatus: String = ""
+    @Published var isDownloading: Bool = false
+
     private init() {}
 
-    private func getFileExtension(fromContentType contentType: String?) -> String {
-        guard let contentType = contentType else { return "mp4" } // Default to mp4 if no content type
-
-        if contentType.contains("video/mp4") {
-            return "mp4"
-        } else if contentType.contains("video/webm") {
-            return "webm"
-        } else if contentType.contains("video/quicktime") { // For .mov
-            return "mov"
-        } else if contentType.contains("application/vnd.apple.mpegurl") || contentType.contains("application/x-mpegURL") {
-            return "m3u8" // HLS playlist
-        } else if contentType.contains("audio/mpeg") {
-            return "mp3"
-        } else if contentType.contains("audio/wav") {
-            return "wav"
-        } else if contentType.contains("audio/x-m4a") || contentType.contains("audio/mp4") { // For .m4a
-            return "m4a"
-        } else if contentType.contains("audio/aac") {
-            return "aac"
+    func downloadVideo(url: URL, filename: String, format: String, quality: String) async throws {
+        await MainActor.run {
+            self.isDownloading = true
+            self.currentProgress = 0
+            self.currentStatus = "Starting..."
         }
-        // Fallback or handle other types as needed
-        return "mp4" // Default to mp4
-    }
 
-    func downloadVideo(url: URL, filename: String, format: String) async throws {
         print("⬇️ [iOS] Starting download process for: \(url.absoluteString)")
-        
-        // 1. Request the direct download link from the backend
-        guard let apiUrl = URL(string: "http://localhost:3000/download") else {
+
+        // 1. Start the download and get session ID
+        guard let startUrl = URL(string: "\(backendURL)/start") else {
             throw URLError(.badURL)
         }
 
-        var request = URLRequest(url: apiUrl)
+        var request = URLRequest(url: startUrl)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 60 // Timeout for obtaining the link
+        request.timeoutInterval = 30
 
-        // We send the format preferences, though actual result depends on backend capabilities
+        let backendFormat = format == "mp3" ? "audio" : "video"
+
         let body: [String: Any] = [
             "url": url.absoluteString,
-            "format": format,
-            "quality": "best"
+            "format": backendFormat,
+            "quality": quality,
+            "title": filename
         ]
 
-        print("📤 [iOS] Requesting video info from backend...")
+        print("📤 [iOS] Sending start request to backend...")
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (startData, startResponse) = try await URLSession.shared.data(for: request)
 
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw URLError(.badServerResponse)
-        }
-
-        if httpResponse.statusCode != 200 {
-            print("❌ [iOS] Backend error: \(httpResponse.statusCode)")
-            // Try to parse error message if available
-            if let errorJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let errorMessage = errorJson["error"] as? String {
-                print("❌ [iOS] Error details: \(errorMessage)")
+        guard let httpResponse = startResponse as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            await MainActor.run {
+                self.isDownloading = false
             }
             throw URLError(.badServerResponse)
         }
 
-        // Parse the JSON response to get the direct URL
-        let videoInfo = try JSONDecoder().decode(VideoInfoResponse.self, from: data)
-        
-        guard let directDownloadURL = URL(string: videoInfo.url) else {
-            print("❌ [iOS] Invalid direct URL returned")
+        let startResult = try JSONDecoder().decode(StartDownloadResponse.self, from: startData)
+        print("✅ [iOS] Download started with session ID: \(startResult.sessionId)")
+
+        // 2. Poll for progress
+        let sessionId = startResult.sessionId
+        var completed = false
+        var lastProgress: Double = 0
+
+        while !completed {
+            try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+
+            guard let progressUrl = URL(string: "\(backendURL)/progress/\(sessionId)") else {
+                continue
+            }
+
+            let (progressData, _) = try await URLSession.shared.data(from: progressUrl)
+            let progressResult = try JSONDecoder().decode(ProgressResponse.self, from: progressData)
+
+            await MainActor.run {
+                self.currentProgress = progressResult.progress / 100.0
+                switch progressResult.status {
+                case "pending":
+                    self.currentStatus = "Preparing..."
+                case "downloading":
+                    self.currentStatus = "Downloading..."
+                case "processing":
+                    self.currentStatus = "Processing..."
+                case "completed":
+                    self.currentStatus = "Completed!"
+                case "error":
+                    self.currentStatus = "Error"
+                default:
+                    self.currentStatus = progressResult.status
+                }
+            }
+
+            if progressResult.progress != lastProgress {
+                print("📊 [iOS] Progress: \(String(format: "%.1f", progressResult.progress))% - \(progressResult.status)")
+                lastProgress = progressResult.progress
+            }
+
+            if progressResult.status == "completed" {
+                completed = true
+            } else if progressResult.status == "error" {
+                await MainActor.run {
+                    self.isDownloading = false
+                }
+                throw NSError(domain: "DownloadError", code: -1, userInfo: [NSLocalizedDescriptionKey: progressResult.error ?? "Unknown error"])
+            }
+        }
+
+        // 3. Download the file
+        await MainActor.run {
+            self.currentStatus = "Saving file..."
+        }
+
+        guard let fileUrl = URL(string: "\(backendURL)/file/\(sessionId)") else {
+            await MainActor.run {
+                self.isDownloading = false
+            }
             throw URLError(.badURL)
         }
 
-        print("✅ [iOS] Received direct link from backend")
-        print("   🔗 URL: \(directDownloadURL.absoluteString)")
-        print("   📄 Title: \(videoInfo.title ?? "Unknown")")
+        print("📥 [iOS] Downloading file...")
+        let (downloadedURL, downloadResponse) = try await URLSession.shared.download(from: fileUrl)
 
-        // 2. Download the actual file from the direct link
-        print("⬇️ [iOS] Starting file download...")
-        var downloadRequest = URLRequest(url: directDownloadURL)
-        downloadRequest.timeoutInterval = 300 // 5 minutes for large files
-        
-        let (downloadedURL, downloadResponse) = try await URLSession.shared.download(for: downloadRequest)
-
-        var actualFileExtension = format // Fallback to requested format
-        if let httpDownloadResponse = downloadResponse as? HTTPURLResponse {
-            let contentType = httpDownloadResponse.value(forHTTPHeaderField: "Content-Type")
-            actualFileExtension = getFileExtension(fromContentType: contentType)
-
-            print("📥 [iOS] Download Response Headers:")
-            print("   Status: \(httpDownloadResponse.statusCode)")
-            print("   Content-Type: \(contentType ?? "unknown")")
-            print("   Content-Length: \(httpDownloadResponse.expectedContentLength) bytes")
-            print("   Suggested Filename: \(httpDownloadResponse.suggestedFilename ?? "none")")
-            print("   Deduced Extension: \(actualFileExtension)")
-            
-            guard httpDownloadResponse.statusCode == 200 else {
-                throw URLError(.badServerResponse)
+        guard let httpDownloadResponse = downloadResponse as? HTTPURLResponse,
+              httpDownloadResponse.statusCode == 200 else {
+            await MainActor.run {
+                self.isDownloading = false
             }
+            throw URLError(.badServerResponse)
         }
 
-        // 3. Move file to Documents directory
+        // 4. Move file to Documents directory
         let fileManager = FileManager.default
         guard let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            await MainActor.run {
+                self.isDownloading = false
+            }
             throw URLError(.fileDoesNotExist)
         }
 
-        // Ensure filename has correct extension
+        let contentType = httpDownloadResponse.value(forHTTPHeaderField: "Content-Type") ?? ""
+        let actualExtension: String
+        if contentType.contains("audio/mpeg") {
+            actualExtension = "mp3"
+        } else if contentType.contains("video/mp4") {
+            actualExtension = "mp4"
+        } else {
+            actualExtension = format
+        }
+
         let safeFilename = filename.replacingOccurrences(of: "/", with: "_")
-        let finalFilename = safeFilename.hasSuffix(".\(actualFileExtension)") ? safeFilename : "\(safeFilename).\(actualFileExtension)"
+        let finalFilename = safeFilename.hasSuffix(".\(actualExtension)") ? safeFilename : "\(safeFilename).\(actualExtension)"
         let destinationURL = documentsURL.appendingPathComponent(finalFilename)
 
-        // Remove existing file if needed
         if fileManager.fileExists(atPath: destinationURL.path) {
             try fileManager.removeItem(at: destinationURL)
         }
 
         try fileManager.moveItem(at: downloadedURL, to: destinationURL)
 
-        // Log final file info
         if let fileAttributes = try? fileManager.attributesOfItem(atPath: destinationURL.path),
            let fileSize = fileAttributes[.size] as? Int64 {
             print("✅ [iOS] File saved successfully:")
             print("   Path: \(destinationURL.path)")
-            print("   File size: \(fileSize) bytes (\(Double(fileSize) / 1024.0 / 1024.0) MB)")
+            print("   File size: \(fileSize) bytes (\(String(format: "%.2f", Double(fileSize) / 1024.0 / 1024.0)) MB)")
+        }
+
+        await MainActor.run {
+            self.isDownloading = false
+            self.currentProgress = 1.0
+            self.currentStatus = "Completed!"
         }
     }
 }

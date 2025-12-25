@@ -10,13 +10,15 @@ internal import SwiftUI
 struct DownloadOptionsView: View {
     let url: URL
     @Binding var isPresented: Bool
-    
+
+    @StateObject private var downloadManager = DownloadManager.shared
     @State private var filename: String = ""
     @State private var format: String = "mp4"
+    @State private var quality: String = "high"
     @State private var isDownloading = false
     @State private var errorMessage: String?
     @State private var downloadSuccess = false
-    
+
     var body: some View {
         NavigationView {
             Form {
@@ -24,6 +26,7 @@ struct DownloadOptionsView: View {
                     TextField("Filename".localized, text: $filename)
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
+                        .disabled(isDownloading)
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Format".localized)
@@ -38,20 +41,52 @@ struct DownloadOptionsView: View {
                         .padding(8)
                         .background(Color.adaptiveSecondaryBackground)
                         .cornerRadius(8)
+                        .disabled(isDownloading)
+                    }
+                    .listRowBackground(Color.clear)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Quality".localized)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Picker("Quality".localized, selection: $quality) {
+                            Text("Best").tag("high")
+                            Text("Medium").tag("mid")
+                            Text("Low").tag("low")
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                        .labelsHidden()
+                        .padding(8)
+                        .background(Color.adaptiveSecondaryBackground)
+                        .cornerRadius(8)
+                        .disabled(isDownloading)
                     }
                     .listRowBackground(Color.clear)
                 }
-                
+
                 if isDownloading {
-                    Section {
-                        HStack {
-                            Text("Downloading...".localized)
-                            Spacer()
-                            ProgressView()
+                    Section(header: Text("Progress".localized)) {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Text(downloadManager.currentStatus)
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                                Text("\(Int(downloadManager.currentProgress * 100))%")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.primary)
+                            }
+
+                            ProgressView(value: downloadManager.currentProgress)
+                                .progressViewStyle(LinearProgressViewStyle())
+                                .scaleEffect(x: 1, y: 2, anchor: .center)
+                                .tint(.blue)
                         }
+                        .padding(.vertical, 8)
                     }
                 }
-                
+
                 if let error = errorMessage {
                     Section {
                         Text(error)
@@ -59,7 +94,7 @@ struct DownloadOptionsView: View {
                             .font(.caption)
                     }
                 }
-                
+
                 if downloadSuccess {
                     Section {
                         HStack {
@@ -70,12 +105,20 @@ struct DownloadOptionsView: View {
                         }
                     }
                 }
-                
+
                 Button(action: startDownload) {
                     HStack {
                         Spacer()
-                        Text("Download".localized)
-                            .font(.headline)
+                        if isDownloading {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .padding(.trailing, 8)
+                            Text("Downloading...".localized)
+                                .font(.headline)
+                        } else {
+                            Text("Download".localized)
+                                .font(.headline)
+                        }
                         Spacer()
                     }
                 }
@@ -87,6 +130,7 @@ struct DownloadOptionsView: View {
                     Button("Close".localized) {
                         isPresented = false
                     }
+                    .disabled(isDownloading)
                 }
             }
             .onAppear {
@@ -97,19 +141,24 @@ struct DownloadOptionsView: View {
             .interactiveDismissDisabled(isDownloading)
         }
     }
-    
+
     private func startDownload() {
         guard !filename.isEmpty else { return }
-        
+
         withAnimation {
             isDownloading = true
             errorMessage = nil
             downloadSuccess = false
         }
-        
+
         Task {
             do {
-                try await DownloadManager.shared.downloadVideo(url: url, filename: filename, format: format)
+                try await DownloadManager.shared.downloadVideo(
+                    url: url,
+                    filename: filename,
+                    format: format,
+                    quality: quality
+                )
                 await MainActor.run {
                     withAnimation {
                         isDownloading = false
