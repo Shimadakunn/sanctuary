@@ -41,14 +41,14 @@ class FavoritesManager: ObservableObject {
 
     private func initializeDefaultFavorites() {
         let defaults: [(title: String, url: String, icon: String, color: String)] = [
-            ("YouTube".localized, "https://m.youtube.com/", "play.rectangle.fill", "red"),
-            ("Movies/Shows".localized, "https://www.cineby.gd/", "film.fill", "purple"),
-            ("Anime".localized, "https://9animetv.to/home", "sparkles.tv.fill", "pink"),
-            ("Manga".localized, "https://mangafire.to/home", "book.fill", "orange"),
-            ("Live Sports".localized, "https://sportyhunter.com/", "sportscourt.fill", "green"),
-            ("Live TV".localized, "https://tv.garden/", "tv.fill", "blue"),
             ("eBooks".localized, "https://z-lib.gd/", "books.vertical.fill", "indigo"),
-            ("Comics".localized, "https://readcomiconline.li/", "text.book.closed.fill", "yellow"),
+            ("Manga".localized, "https://mangafire.to/home", "book.fill", "orange"),
+            ("Movies/Shows".localized, "https://www.cineby.gd/", "film.fill", "purple"),
+            ("Anime".localized, "https://9animetv.to/home", "sparkles.tv.fill", "mint"),
+            ("Live TV".localized, "https://tv.garden/", "tv.fill", "blue"),
+            ("Live Sports".localized, "https://sportyhunter.com/", "sportscourt.fill", "green"),
+            ("YouTube".localized, "https://m.youtube.com/", "play.rectangle.fill", "red"),
+            ("Music".localized, "https://music.youtube.com/", "music.note", "yellow"),
         ]
 
         for (title, url, icon, color) in defaults {
@@ -147,7 +147,7 @@ class FavoritesManager: ObservableObject {
             "https://sportyhunter.com/": "Live Sports",
             "https://tv.garden/": "Live TV",
             "https://z-lib.gd/": "eBooks",
-            "https://readcomiconline.li/": "Comics"
+            "https://music.youtube.com/": "Music"
         ]
 
         var needsUpdate = false
