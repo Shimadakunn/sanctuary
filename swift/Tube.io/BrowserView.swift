@@ -430,6 +430,89 @@ struct WebViewWrapper: UIViewRepresentable {
         // Add message handler for click tracking
         configuration.userContentController.add(context.coordinator, name: "clickHandler")
 
+        // Add message handler for fullscreen detection
+        configuration.userContentController.add(context.coordinator, name: "fullscreenHandler")
+
+        // Inject JavaScript to detect fullscreen changes
+        let fullscreenDetectionScript = """
+        (function() {
+            let lastFullscreenState = false;
+
+            function notifyFullscreenChange(isFullscreen) {
+                if (isFullscreen !== lastFullscreenState) {
+                    lastFullscreenState = isFullscreen;
+                    console.log('[Fullscreen JS] State changed to: ' + isFullscreen);
+                    window.webkit.messageHandlers.fullscreenHandler.postMessage({
+                        isFullscreen: isFullscreen
+                    });
+                }
+            }
+
+            function checkFullscreenState() {
+                const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+                notifyFullscreenChange(isFullscreen);
+            }
+
+            // Standard fullscreen API events
+            document.addEventListener('fullscreenchange', checkFullscreenState);
+            document.addEventListener('webkitfullscreenchange', checkFullscreenState);
+            document.addEventListener('mozfullscreenchange', checkFullscreenState);
+            document.addEventListener('MSFullscreenChange', checkFullscreenState);
+
+            // iOS native video fullscreen events (on video elements)
+            function attachVideoListeners(video) {
+                video.addEventListener('webkitbeginfullscreen', function() {
+                    console.log('[Fullscreen JS] Video began fullscreen');
+                    notifyFullscreenChange(true);
+                });
+                video.addEventListener('webkitendfullscreen', function() {
+                    console.log('[Fullscreen JS] Video ended fullscreen');
+                    notifyFullscreenChange(false);
+                });
+                // Also listen for pause which often happens when exiting fullscreen
+                video.addEventListener('webkitpresentationmodechanged', function(e) {
+                    const mode = video.webkitPresentationMode;
+                    console.log('[Fullscreen JS] Presentation mode changed: ' + mode);
+                    if (mode === 'fullscreen') {
+                        notifyFullscreenChange(true);
+                    } else {
+                        notifyFullscreenChange(false);
+                    }
+                });
+            }
+
+            // Attach to existing videos
+            document.querySelectorAll('video').forEach(attachVideoListeners);
+
+            // Watch for new video elements
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    mutation.addedNodes.forEach(function(node) {
+                        if (node.nodeName === 'VIDEO') {
+                            attachVideoListeners(node);
+                        }
+                        if (node.querySelectorAll) {
+                            node.querySelectorAll('video').forEach(attachVideoListeners);
+                        }
+                    });
+                });
+            });
+            observer.observe(document.documentElement, { childList: true, subtree: true });
+
+            // Also capture events on document level for iframes
+            document.addEventListener('webkitbeginfullscreen', function(e) {
+                console.log('[Fullscreen JS] Document webkitbeginfullscreen');
+                notifyFullscreenChange(true);
+            }, true);
+            document.addEventListener('webkitendfullscreen', function(e) {
+                console.log('[Fullscreen JS] Document webkitendfullscreen');
+                notifyFullscreenChange(false);
+            }, true);
+        })();
+        """
+        let fullscreenScript = WKUserScript(source: fullscreenDetectionScript, injectionTime: .atDocumentEnd, forMainFrameOnly: false)
+        configuration.userContentController.addUserScript(fullscreenScript)
+
         // Inject JavaScript to track clicks and handle link navigation
         let clickTrackerScript = """
         document.addEventListener('click', function(event) {
@@ -772,9 +855,22 @@ struct WebViewWrapper: UIViewRepresentable {
     class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
         var parent: WebViewWrapper
         var currentURL: URL?
+        private var isCurrentlyFullscreen = false
+        private var fullscreenEnteredTime: Date?
+        private var fullscreenObserver: NSObjectProtocol?
+        private var windowObserver: NSObjectProtocol?
 
         // Reference to the shared AdBlockManager
         private let adBlockManager = AdBlockManager.shared
+
+        deinit {
+            if let observer = fullscreenObserver {
+                NotificationCenter.default.removeObserver(observer)
+            }
+            if let observer = windowObserver {
+                NotificationCenter.default.removeObserver(observer)
+            }
+        }
 
         // Suspicious URL patterns (for tracking/ad redirects)
         private let suspiciousPatterns = [
@@ -810,6 +906,145 @@ struct WebViewWrapper: UIViewRepresentable {
 
         init(_ parent: WebViewWrapper) {
             self.parent = parent
+            super.init()
+
+            // Observe when app becomes active to check if fullscreen ended
+            fullscreenObserver = NotificationCenter.default.addObserver(
+                forName: UIApplication.didBecomeActiveNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                // Delay check to allow window hierarchy to settle (increased to 1.0s to handle Control Center dismissal)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    self?.checkAndRestorePortraitIfNeeded()
+                }
+            }
+
+            // Observe window becoming hidden (fullscreen dismissal via X button)
+            windowObserver = NotificationCenter.default.addObserver(
+                forName: UIWindow.didBecomeHiddenNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] notification in
+                if let window = notification.object as? UIWindow {
+                    let className = String(describing: type(of: window))
+                    if className.contains("AVFullScreen") {
+                        print("🔄 [Fullscreen] AVFullScreen window hidden")
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            self?.checkAndRestorePortraitIfNeeded()
+                        }
+                    }
+                }
+            }
+
+            // Observe when main window becomes key (happens after swipe-down dismiss)
+            NotificationCenter.default.addObserver(
+                forName: UIWindow.didBecomeKeyNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] notification in
+                if let window = notification.object as? UIWindow {
+                    let className = String(describing: type(of: window))
+                    // If our main UIWindow becomes key and we were in fullscreen, check if we should exit
+                    if !className.contains("AVFullScreen") {
+                        print("🔄 [Fullscreen] Main window became key")
+                        // Increased delay to 1.0s to avoid false positives from Control Center
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                            self?.checkAndRestorePortraitIfNeeded()
+                        }
+                    }
+                }
+            }
+
+            // Observe window resign key (when fullscreen takes over)
+            NotificationCenter.default.addObserver(
+                forName: UIWindow.didResignKeyNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                // When a window resigns key, check after a delay if fullscreen ended
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    self?.checkAndRestorePortraitIfNeeded()
+                }
+            }
+        }
+
+        private func checkAndRestorePortraitIfNeeded() {
+            // Only check if we've been in fullscreen for at least 2 seconds
+            // This prevents false positives during fullscreen transition
+            guard isCurrentlyFullscreen else { return }
+            guard let enteredTime = fullscreenEnteredTime,
+                  Date().timeIntervalSince(enteredTime) > 2.0 else {
+                print("🔄 [Fullscreen] Skipping check - too soon after entering fullscreen")
+                return
+            }
+
+            // Check if any fullscreen window is still present
+            var hasFullscreenWindow = false
+            var visibleWindows: [String] = []
+            
+            for scene in UIApplication.shared.connectedScenes {
+                guard let windowScene = scene as? UIWindowScene else { continue }
+                for window in windowScene.windows {
+                    let className = String(describing: type(of: window))
+                    
+                    // Ignore system windows
+                    if className.contains("TextEffects") || className.contains("RemoteKeyboard") {
+                        continue
+                    }
+                    
+                    var windowInfo = className
+                    
+                    // Check Window Class
+                    if className.contains("AVFullScreen") {
+                        hasFullscreenWindow = true
+                    }
+                    
+                    // Check Root View Controller
+                    if let rootVC = window.rootViewController {
+                        let rootName = String(describing: type(of: rootVC))
+                        windowInfo += " -> \(rootName)"
+                        
+                        // Recursive check for AV controllers
+                        if checkViewControllerForAV(rootVC) {
+                            hasFullscreenWindow = true
+                        }
+                        
+                        // SPECIAL CASE: A generic UIWindow with a generic UIViewController is often the player
+                        // The main window uses UIHostingController, so we can distinguish them
+                        if !hasFullscreenWindow && rootName == "UIViewController" && className == "UIWindow" {
+                            print("🔄 [Fullscreen] Found potential generic player window: \(windowInfo)")
+                            hasFullscreenWindow = true
+                        }
+                    }
+                    
+                    visibleWindows.append(windowInfo)
+                    
+                    if hasFullscreenWindow { break }
+                }
+                if hasFullscreenWindow { break }
+            }
+
+            // If we were in fullscreen but no fullscreen window exists, restore portrait
+            if !hasFullscreenWindow {
+                print("🔄 [Fullscreen] Native detection: fullscreen window gone, restoring portrait. Windows: \(visibleWindows)")
+                handleFullscreenChange(isFullscreen: false)
+            }
+        }
+        
+        private func checkViewControllerForAV(_ vc: UIViewController) -> Bool {
+            let name = String(describing: type(of: vc))
+            if name.contains("AVFullScreen") || name.contains("AVPlayer") { return true }
+            
+            if let presented = vc.presentedViewController {
+                if checkViewControllerForAV(presented) { return true }
+            }
+            
+            for child in vc.children {
+                if checkViewControllerForAV(child) { return true }
+            }
+            
+            return false
         }
 
         private func isAdDomain(_ url: URL) -> Bool {
@@ -1061,6 +1296,82 @@ struct WebViewWrapper: UIViewRepresentable {
                 print("👆 [User Click] Tag: <\(tagName)>, Link: \(isLink ? "YES" : "NO"), Target: \(linkTarget), OnClick: \(hasOnClick ? "YES" : "NO"), DefaultPrevented: \(defaultPrevented ? "YES" : "NO")")
                 print("   ↳ ID: \(id), Class: \(className), Text: \"\(text)\"")
                 print("   ↳ URL: \(href), Position: (\(Int(x)), \(Int(y)))")
+            }
+
+            // Handle fullscreen changes
+            if message.name == "fullscreenHandler", let info = message.body as? [String: Any] {
+                let isFullscreen = info["isFullscreen"] as? Bool ?? false
+                print("🎬 [Fullscreen] Changed to: \(isFullscreen ? "FULLSCREEN" : "NORMAL")")
+                handleFullscreenChange(isFullscreen: isFullscreen)
+            }
+        }
+
+        private func handleFullscreenChange(isFullscreen: Bool) {
+            // Avoid duplicate calls
+            guard isFullscreen != isCurrentlyFullscreen else { return }
+            isCurrentlyFullscreen = isFullscreen
+
+            // Track when we entered fullscreen (for debouncing exit detection)
+            if isFullscreen {
+                fullscreenEnteredTime = Date()
+                // Update orientation lock to allow landscape
+                AppDelegate.orientationLock = .landscape
+            } else {
+                fullscreenEnteredTime = nil
+                // Update orientation lock back to portrait
+                AppDelegate.orientationLock = .portrait
+            }
+
+            guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene else {
+                print("❌ [Fullscreen] Could not get window scene")
+                return
+            }
+
+            if #available(iOS 16.0, *) {
+                // FIRST: Notify all view controllers to update their supported orientations
+                // This must happen BEFORE requestGeometryUpdate so the system knows all orientations are allowed
+                for window in windowScene.windows {
+                    window.rootViewController?.setNeedsUpdateOfSupportedInterfaceOrientations()
+                }
+
+                // Small delay to let the orientation update propagate
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    if isFullscreen {
+                        // Force landscape when entering fullscreen
+                        print("🔄 [Fullscreen] Requesting landscape orientation")
+                        windowScene.requestGeometryUpdate(.iOS(interfaceOrientations: .landscape)) { error in
+                            if !error.localizedDescription.isEmpty {
+                                print("🔄 [Fullscreen] Landscape request result: \(error.localizedDescription)")
+                            }
+                        }
+                    } else {
+                        // Exiting fullscreen - force portrait to respect user preference/lock
+                        print("🔄 [Fullscreen] Exiting - forcing portrait")
+
+                        // Request portrait orientation
+                        windowScene.requestGeometryUpdate(.iOS(interfaceOrientations: .portrait)) { error in
+                            if !error.localizedDescription.isEmpty {
+                                print("🔄 [Fullscreen] Portrait request result: \(error.localizedDescription)")
+                            }
+
+                            // Fallback attempts
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                UIDevice.current.setValue(UIInterfaceOrientation.portrait.rawValue, forKey: "orientation")
+                                UIViewController.attemptRotationToDeviceOrientation()
+                            }
+                        }
+
+                        // Ensure playback continues after exiting fullscreen
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            print("🎬 [Fullscreen] Resuming playback after exit")
+                            BackgroundPlaybackManager.shared.resumePlayback()
+                        }
+                    }
+                }
+            } else {
+                // Fallback for iOS 15 and earlier
+                let orientation: UIInterfaceOrientation = isFullscreen ? .landscapeRight : .portrait
+                UIDevice.current.setValue(orientation.rawValue, forKey: "orientation")
             }
         }
     }

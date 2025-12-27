@@ -55,6 +55,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             }
         }
 
+        // Swizzle UIHostingController to support all orientations
+        swizzleHostingController()
+
         return true
     }
 
@@ -69,25 +72,28 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         }
     }
 
+    private func swizzleHostingController() {
+        // Swizzle UIViewController's supportedInterfaceOrientations to always return all orientations
+        let originalSelector = #selector(getter: UIViewController.supportedInterfaceOrientations)
+        let swizzledSelector = #selector(UIViewController.swizzled_supportedInterfaceOrientations)
+
+        guard let originalMethod = class_getInstanceMethod(UIViewController.self, originalSelector),
+              let swizzledMethod = class_getInstanceMethod(UIViewController.self, swizzledSelector) else {
+            print("❌ [Swizzle] Failed to get methods")
+            return
+        }
+
+        method_exchangeImplementations(originalMethod, swizzledMethod)
+        print("✅ [Swizzle] UIViewController orientation swizzled to allow all orientations")
+    }
+
     func application(_ application: UIApplication, supportedInterfaceOrientationsFor window: UIWindow?) -> UIInterfaceOrientationMask {
-        guard let window = window else {
-            print("🔄 [Orientation] Window is nil - returning orientation lock: \(AppDelegate.orientationLock)")
-            return AppDelegate.orientationLock
-        }
+        return AppDelegate.orientationLock
+    }
+}
 
-        let windowClassName = String(describing: type(of: window))
-        print("🔄 [Orientation] Window class: \(windowClassName), Orientation lock: \(AppDelegate.orientationLock)")
-
-        // Check for web video fullscreen (for videos played in browser)
-        if windowClassName.contains("AVFullScreen") ||
-           windowClassName.contains("PGHostedWindow") ||
-           window.rootViewController?.presentedViewController?.description.contains("AVFullScreen") == true {
-            print("🔄 [Orientation] Fullscreen web video detected - returning .landscape")
-            return .landscape
-        }
-
-        // Use the orientation lock set by video/audio players
-        print("🔄 [Orientation] Returning orientation lock: \(AppDelegate.orientationLock)")
+extension UIViewController {
+    @objc func swizzled_supportedInterfaceOrientations() -> UIInterfaceOrientationMask {
         return AppDelegate.orientationLock
     }
 }

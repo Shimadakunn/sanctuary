@@ -169,6 +169,10 @@ class BackgroundPlaybackManager {
         isInBackground = true
         // Ensure audio session is active
         activateAudioSession()
+
+        // Start resume loop immediately to catch pauses from Control Center/Notification Center
+        resumeAttempts = 0
+        startResumeLoop()
     }
 
     @objc private func appWillEnterForeground() {
