@@ -41,7 +41,7 @@ class FavoritesManager: ObservableObject {
 
     private func initializeDefaultFavorites() {
         let defaults: [(title: String, url: String, icon: String, color: String)] = [
-            ("YouTube".localized, "https://m.youtube.com", "play.rectangle.fill", "red"),
+            ("YouTube".localized, "https://m.youtube.com/", "play.rectangle.fill", "red"),
             ("Movies/Shows".localized, "https://www.cineby.gd/", "film.fill", "purple"),
             ("Anime".localized, "https://9animetv.to/home", "sparkles.tv.fill", "pink"),
             ("Manga".localized, "https://mangafire.to/home", "book.fill", "orange"),
