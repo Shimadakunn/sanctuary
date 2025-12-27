@@ -1,0 +1,80 @@
+/* Settings */
+"Settings" = "Paramètres";
+"Preferences" = "Préférences";
+"Launching App" = "Démarrage de l'App";
+"Privacy" = "Confidentialité";
+"App Lock" = "Verrouillage de l'App";
+"Clear Cache" = "Effacer le Cache";
+"Clear Cookies" = "Effacer les Cookies";
+"Clear All Website Data" = "Effacer Toutes les Données";
+"About" = "À Propos";
+"Version" = "Version";
+"Build" = "Build";
+"About Tube.io" = "À Propos de Tube.io";
+
+/* Alerts */
+"Cancel" = "Annuler";
+"Clear" = "Effacer";
+"Done" = "Terminé";
+"Edit" = "Modifier";
+"Save" = "Enregistrer";
+
+/* Cache Alert */
+"Clear Cache Alert Message" = "Cela effacera toutes les images et fichiers en cache. Cela peut améliorer la confidentialité et libérer de l'espace de stockage.";
+
+/* Cookies Alert */
+"Clear Cookies Alert Message" = "Cela effacera tous les cookies. Vous serez déconnecté des sites web.";
+
+/* Clear All Data Alert */
+"Clear All Website Data Alert Message" = "Cela effacera toutes les données du site web, y compris le cache, les cookies et le stockage local. Vous serez déconnecté de tous les sites web.";
+
+/* HomePage */
+"Search or enter website" = "Rechercher ou saisir un site web";
+"Favorites" = "Favoris";
+"History" = "Historique";
+"Files" = "Fichiers";
+
+/* Favorites */
+"SHOWN ON HOME" = "AFFICHÉ SUR L'ACCUEIL";
+"HIDDEN" = "MASQUÉ";
+"Edit Favorite" = "Modifier le Favori";
+"Title" = "Titre";
+"URL" = "URL";
+
+/* History */
+"No History Yet" = "Pas Encore d'Historique";
+"No Results" = "Aucun Résultat";
+"Sites you visit will appear here" = "Les sites que vous visitez apparaîtront ici";
+"Try a different search term" = "Essayez un autre terme de recherche";
+"Just now" = "À l'instant";
+
+/* Startup Page */
+"Home" = "Accueil";
+
+/* Default Websites */
+"YouTube" = "YouTube";
+"Movies/Shows" = "Films/Séries";
+"Anime" = "Anime";
+"Manga" = "Manga";
+"Live Sports" = "Sports en Direct";
+"Live TV" = "TV en Direct";
+"eBooks" = "Livres Numériques";
+"Comics" = "Bandes Dessinées";
+
+/* Browser Menu Actions */
+"Share" = "Partager";
+"Reload" = "Recharger";
+"Add to Favorites" = "Ajouter aux Favoris";
+"Remove from Favorites" = "Retirer des Favoris";
+"Hide" = "Masquer";
+"Add Favorite" = "Ajouter un Favori";
+
+/* Download */
+"Download" = "Télécharger";
+"Download Video" = "Télécharger la vidéo";
+"Filename" = "Nom du fichier";
+"Format" = "Format";
+"Downloading..." = "Téléchargement...";
+"Download Complete" = "Téléchargement terminé";
+"Close" = "Fermer";
+"Video Details" = "Détails de la vidéo";

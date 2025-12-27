@@ -1,0 +1,70 @@
+/* Settings */
+"Settings" = "সেটিংস";
+"Preferences" = "পছন্দসমূহ";
+"Launching App" = "অ্যাপ চালু করা";
+"Privacy" = "গোপনীয়তা";
+"App Lock" = "অ্যাপ লক";
+"Clear Cache" = "ক্যাশে সাফ করুন";
+"Clear Cookies" = "কুকি সাফ করুন";
+"Clear All Website Data" = "সমস্ত ওয়েবসাইট ডেটা সাফ করুন";
+"About" = "সম্পর্কে";
+"Version" = "সংস্করণ";
+"Build" = "বিল্ড";
+"About Tube.io" = "Tube.io সম্পর্কে";
+
+/* Alerts */
+"Cancel" = "বাতিল করুন";
+"Clear" = "সাফ করুন";
+"Done" = "সম্পন্ন";
+"Edit" = "সম্পাদনা করুন";
+"Save" = "সংরক্ষণ করুন";
+
+/* Cache Alert */
+"Clear Cache Alert Message" = "এটি সমস্ত ক্যাশে করা ছবি এবং ফাইল সাফ করবে। এটি গোপনীয়তা উন্নত করতে এবং স্টোরেজ স্পেস মুক্ত করতে পারে।";
+
+/* Cookies Alert */
+"Clear Cookies Alert Message" = "এটি সমস্ত কুকি সাফ করবে। আপনি ওয়েবসাইট থেকে লগ আউট হবেন।";
+
+/* Clear All Data Alert */
+"Clear All Website Data Alert Message" = "এটি ক্যাশে, কুকি এবং স্থানীয় স্টোরেজ সহ সমস্ত ওয়েবসাইট ডেটা সাফ করবে। আপনি সমস্ত ওয়েবসাইট থেকে লগ আউট হবেন।";
+
+/* HomePage */
+"Search or enter website" = "ওয়েবসাইট অনুসন্ধান বা প্রবেশ করুন";
+"Favorites" = "প্রিয়";
+"History" = "ইতিহাস";
+"Files" = "ফাইল";
+
+/* Favorites */
+"SHOWN ON HOME" = "হোমে দেখানো হয়েছে";
+"HIDDEN" = "লুকানো";
+"Edit Favorite" = "প্রিয় সম্পাদনা করুন";
+"Title" = "শিরোনাম";
+"URL" = "URL";
+
+/* History */
+"No History Yet" = "এখনও কোনো ইতিহাস নেই";
+"No Results" = "কোনো ফলাফল নেই";
+"Sites you visit will appear here" = "আপনি যে সাইটগুলি পরিদর্শন করবেন তা এখানে প্রদর্শিত হবে";
+"Try a different search term" = "একটি ভিন্ন অনুসন্ধান শব্দ চেষ্টা করুন";
+"Just now" = "এইমাত্র";
+
+/* Startup Page */
+"Home" = "হোম";
+
+/* Default Websites */
+"YouTube" = "YouTube";
+"Movies/Shows" = "সিনেমা/শো";
+"Anime" = "অ্যানিমে";
+"Manga" = "মাঙ্গা";
+"Live Sports" = "লাইভ খেলা";
+"Live TV" = "লাইভ টিভি";
+"eBooks" = "ই-বুক";
+"Comics" = "কমিক্স";
+
+/* Browser Menu Actions */
+"Share" = "শেয়ার করুন";
+"Reload" = "পুনরায় লোড করুন";
+"Add to Favorites" = "প্রিয়তে যোগ করুন";
+"Remove from Favorites" = "প্রিয় থেকে সরান";
+"Hide" = "লুকান";
+"Add Favorite" = "প্রিয় যোগ করুন";

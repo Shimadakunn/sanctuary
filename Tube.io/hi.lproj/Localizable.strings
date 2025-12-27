@@ -1,0 +1,70 @@
+/* Settings */
+"Settings" = "सेटिंग";
+"Preferences" = "प्राथमिकताएं";
+"Launching App" = "ऐप लॉन्च करना";
+"Privacy" = "गोपनीयता";
+"App Lock" = "ऐप लॉक";
+"Clear Cache" = "कैश साफ़ करें";
+"Clear Cookies" = "कुकीज़ साफ़ करें";
+"Clear All Website Data" = "सभी वेबसाइट डेटा साफ़ करें";
+"About" = "के बारे में";
+"Version" = "संस्करण";
+"Build" = "बिल्ड";
+"About Tube.io" = "Tube.io के बारे में";
+
+/* Alerts */
+"Cancel" = "रद्द करें";
+"Clear" = "साफ़ करें";
+"Done" = "हो गया";
+"Edit" = "संपादित करें";
+"Save" = "सहेजें";
+
+/* Cache Alert */
+"Clear Cache Alert Message" = "यह सभी कैश की गई छवियों और फ़ाइलों को साफ़ कर देगा। यह गोपनीयता में सुधार कर सकता है और संग्रहण स्थान खाली कर सकता है।";
+
+/* Cookies Alert */
+"Clear Cookies Alert Message" = "यह सभी कुकीज़ साफ़ कर देगा। आप वेबसाइटों से लॉग आउट हो जाएंगे।";
+
+/* Clear All Data Alert */
+"Clear All Website Data Alert Message" = "यह कैश, कुकीज़ और स्थानीय संग्रहण सहित सभी वेबसाइट डेटा साफ़ कर देगा। आप सभी वेबसाइटों से लॉग आउट हो जाएंगे।";
+
+/* HomePage */
+"Search or enter website" = "खोजें या वेबसाइट दर्ज करें";
+"Favorites" = "पसंदीदा";
+"History" = "इतिहास";
+"Files" = "फ़ाइलें";
+
+/* Favorites */
+"SHOWN ON HOME" = "होम पर दिखाया गया";
+"HIDDEN" = "छुपा हुआ";
+"Edit Favorite" = "पसंदीदा संपादित करें";
+"Title" = "शीर्षक";
+"URL" = "URL";
+
+/* History */
+"No History Yet" = "अभी तक कोई इतिहास नहीं";
+"No Results" = "कोई परिणाम नहीं";
+"Sites you visit will appear here" = "आपके द्वारा देखी गई साइटें यहां दिखाई देंगी";
+"Try a different search term" = "एक अलग खोज शब्द आज़माएं";
+"Just now" = "अभी";
+
+/* Startup Page */
+"Home" = "होम";
+
+/* Default Websites */
+"YouTube" = "YouTube";
+"Movies/Shows" = "फ़िल्में/शो";
+"Anime" = "एनीमे";
+"Manga" = "मंगा";
+"Live Sports" = "लाइव खेल";
+"Live TV" = "लाइव टीवी";
+"eBooks" = "ई-पुस्तकें";
+"Comics" = "कॉमिक्स";
+
+/* Browser Menu Actions */
+"Share" = "साझा करें";
+"Reload" = "पुनः लोड करें";
+"Add to Favorites" = "पसंदीदा में जोड़ें";
+"Remove from Favorites" = "पसंदीदा से हटाएं";
+"Hide" = "छुपाएं";
+"Add Favorite" = "पसंदीदा जोड़ें";

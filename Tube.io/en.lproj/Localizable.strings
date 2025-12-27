@@ -1,0 +1,117 @@
+/* Settings */
+"Settings" = "Settings";
+"Preferences" = "Preferences";
+"Launching App" = "Launching App";
+"Privacy" = "Privacy";
+"App Lock" = "App Lock";
+"Clear Cache" = "Clear Cache";
+"Clear Cookies" = "Clear Cookies";
+"Clear All Website Data" = "Clear All Website Data";
+"About" = "About";
+"Version" = "Version";
+"Build" = "Build";
+"About Tube.io" = "About Tube.io";
+
+/* Alerts */
+"Cancel" = "Cancel";
+"Clear" = "Clear";
+"Done" = "Done";
+"Edit" = "Edit";
+"Save" = "Save";
+
+/* Cache Alert */
+"Clear Cache Alert Message" = "This will clear all cached images and files. This may improve privacy and free up storage space.";
+
+/* Cookies Alert */
+"Clear Cookies Alert Message" = "This will clear all cookies. You will be logged out of websites.";
+
+/* Clear All Data Alert */
+"Clear All Website Data Alert Message" = "This will clear all website data including cache, cookies, and local storage. You will be logged out of all websites.";
+
+/* HomePage */
+"Search or enter website" = "Search or enter website";
+"Favorites" = "Favorites";
+"History" = "History";
+"Files" = "Files";
+
+/* Favorites */
+"SHOWN ON HOME" = "SHOWN ON HOME";
+"HIDDEN" = "HIDDEN";
+"Edit Favorite" = "Edit Favorite";
+"Title" = "Title";
+"URL" = "URL";
+
+/* History */
+"No History Yet" = "No History Yet";
+"No Results" = "No Results";
+"Sites you visit will appear here" = "Sites you visit will appear here";
+"Try a different search term" = "Try a different search term";
+"Just now" = "Just now";
+
+/* Startup Page */
+"Home" = "Home";
+"Open Last App" = "Open Last App";
+
+/* Theme */
+"Theme" = "Theme";
+"System" = "System";
+"Light" = "Light";
+"Dark" = "Dark";
+
+/* Default Websites */
+"YouTube" = "YouTube";
+"Movies/Shows" = "Movies/Shows";
+"Anime" = "Anime";
+"Manga" = "Manga";
+"Live Sports" = "Live Sports";
+"Live TV" = "Live TV";
+"eBooks" = "eBooks";
+"Comics" = "Comics";
+
+/* Browser Menu Actions */
+"Share" = "Share";
+"Reload" = "Reload";
+"Add to Favorites" = "Add to Favorites";
+"Remove from Favorites" = "Remove from Favorites";
+"Hide" = "Hide";
+"Add Favorite" = "Add Favorite";
+
+/* Download */
+"Download" = "Download";
+"Download Video" = "Download Video";
+"Filename" = "Filename";
+"Format" = "Format";
+"Downloading..." = "Downloading...";
+"Download Complete" = "Download Complete";
+"Close" = "Close";
+"Video Details" = "Video Details";
+
+/* Premium */
+"Upgrade to Premium" = "Upgrade to Premium";
+"Ad-free, downloads & more" = "Ad-free, downloads & more";
+"Tube.io Premium" = "Tube.io Premium";
+"Unlock the full experience" = "Unlock the full experience";
+"Ad-Free Experience" = "Ad-Free Experience";
+"Browse without interruptions" = "Browse without interruptions";
+"Download Videos" = "Download Videos";
+"Save videos for offline viewing" = "Save videos for offline viewing";
+"Choose Launching App" = "Choose Launching App";
+"Set your favorite page as startup" = "Set your favorite page as startup";
+"Premium Feature" = "Premium Feature";
+"Get Premium" = "Get Premium";
+"Restore Purchases" = "Restore Purchases";
+"Terms" = "Terms";
+
+/* Subscription */
+"Subscription" = "Subscription";
+"Free Trial" = "Free Trial";
+"Free" = "Free";
+"Premium" = "Premium";
+"Your Subscription" = "Your Subscription";
+"Premium Benefits" = "Premium Benefits";
+"You're a Premium member!" = "You're a Premium member!";
+"Thank you for your support" = "Thank you for your support";
+"Subscribe for $1.99/month" = "Subscribe for $1.99/month";
+"Manage Subscription" = "Manage Subscription";
+"Dev Subscript" = "Dev Subscript";
+"Development Testing" = "Development Testing";

@@ -1,0 +1,70 @@
+/* Settings */
+"Settings" = "Configuración";
+"Preferences" = "Preferencias";
+"Launching App" = "Inicio de la App";
+"Privacy" = "Privacidad";
+"App Lock" = "Bloqueo de App";
+"Clear Cache" = "Limpiar Caché";
+"Clear Cookies" = "Limpiar Cookies";
+"Clear All Website Data" = "Limpiar Todos los Datos";
+"About" = "Acerca de";
+"Version" = "Versión";
+"Build" = "Compilación";
+"About Tube.io" = "Acerca de Tube.io";
+
+/* Alerts */
+"Cancel" = "Cancelar";
+"Clear" = "Limpiar";
+"Done" = "Hecho";
+"Edit" = "Editar";
+"Save" = "Guardar";
+
+/* Cache Alert */
+"Clear Cache Alert Message" = "Esto eliminará todas las imágenes y archivos en caché. Esto puede mejorar la privacidad y liberar espacio de almacenamiento.";
+
+/* Cookies Alert */
+"Clear Cookies Alert Message" = "Esto eliminará todas las cookies. Se cerrará tu sesión en los sitios web.";
+
+/* Clear All Data Alert */
+"Clear All Website Data Alert Message" = "Esto eliminará todos los datos del sitio web, incluidos caché, cookies y almacenamiento local. Se cerrará tu sesión en todos los sitios web.";
+
+/* HomePage */
+"Search or enter website" = "Buscar o ingresar sitio web";
+"Favorites" = "Favoritos";
+"History" = "Historial";
+"Files" = "Archivos";
+
+/* Favorites */
+"SHOWN ON HOME" = "MOSTRADO EN INICIO";
+"HIDDEN" = "OCULTO";
+"Edit Favorite" = "Editar Favorito";
+"Title" = "Título";
+"URL" = "URL";
+
+/* History */
+"No History Yet" = "Sin Historial Aún";
+"No Results" = "Sin Resultados";
+"Sites you visit will appear here" = "Los sitios que visites aparecerán aquí";
+"Try a different search term" = "Prueba un término de búsqueda diferente";
+"Just now" = "Justo ahora";
+
+/* Startup Page */
+"Home" = "Inicio";
+
+/* Default Websites */
+"YouTube" = "YouTube";
+"Movies/Shows" = "Películas/Series";
+"Anime" = "Anime";
+"Manga" = "Manga";
+"Live Sports" = "Deportes en Vivo";
+"Live TV" = "TV en Vivo";
+"eBooks" = "Libros Electrónicos";
+"Comics" = "Cómics";
+
+/* Browser Menu Actions */
+"Share" = "Compartir";
+"Reload" = "Recargar";
+"Add to Favorites" = "Añadir a Favoritos";
+"Remove from Favorites" = "Eliminar de Favoritos";
+"Hide" = "Ocultar";
+"Add Favorite" = "Añadir Favorito";

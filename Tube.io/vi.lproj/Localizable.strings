@@ -1,0 +1,70 @@
+/* Settings */
+"Settings" = "Cài đặt";
+"Preferences" = "Tùy chỉnh";
+"Launching App" = "Khởi chạy Ứng dụng";
+"Privacy" = "Quyền riêng tư";
+"App Lock" = "Khóa Ứng dụng";
+"Clear Cache" = "Xóa Bộ nhớ đệm";
+"Clear Cookies" = "Xóa Cookie";
+"Clear All Website Data" = "Xóa Tất cả Dữ liệu Trang web";
+"About" = "Giới thiệu";
+"Version" = "Phiên bản";
+"Build" = "Bản dựng";
+"About Tube.io" = "Giới thiệu Tube.io";
+
+/* Alerts */
+"Cancel" = "Hủy";
+"Clear" = "Xóa";
+"Done" = "Xong";
+"Edit" = "Chỉnh sửa";
+"Save" = "Lưu";
+
+/* Cache Alert */
+"Clear Cache Alert Message" = "Thao tác này sẽ xóa tất cả hình ảnh và tệp được lưu trong bộ nhớ đệm. Điều này có thể cải thiện quyền riêng tư và giải phóng không gian lưu trữ.";
+
+/* Cookies Alert */
+"Clear Cookies Alert Message" = "Thao tác này sẽ xóa tất cả cookie. Bạn sẽ bị đăng xuất khỏi các trang web.";
+
+/* Clear All Data Alert */
+"Clear All Website Data Alert Message" = "Thao tác này sẽ xóa tất cả dữ liệu trang web bao gồm bộ nhớ đệm, cookie và bộ nhớ cục bộ. Bạn sẽ bị đăng xuất khỏi tất cả các trang web.";
+
+/* HomePage */
+"Search or enter website" = "Tìm kiếm hoặc nhập trang web";
+"Favorites" = "Yêu thích";
+"History" = "Lịch sử";
+"Files" = "Tệp";
+
+/* Favorites */
+"SHOWN ON HOME" = "HIỂN THỊ TRÊN TRANG CHỦ";
+"HIDDEN" = "ĐÃ ẨN";
+"Edit Favorite" = "Chỉnh sửa Yêu thích";
+"Title" = "Tiêu đề";
+"URL" = "URL";
+
+/* History */
+"No History Yet" = "Chưa Có Lịch Sử";
+"No Results" = "Không Có Kết Quả";
+"Sites you visit will appear here" = "Các trang web bạn truy cập sẽ xuất hiện ở đây";
+"Try a different search term" = "Thử từ khóa tìm kiếm khác";
+"Just now" = "Vừa xong";
+
+/* Startup Page */
+"Home" = "Trang chủ";
+
+/* Default Websites */
+"YouTube" = "YouTube";
+"Movies/Shows" = "Phim/Chương trình";
+"Anime" = "Anime";
+"Manga" = "Manga";
+"Live Sports" = "Thể thao Trực tiếp";
+"Live TV" = "TV Trực tiếp";
+"eBooks" = "Sách Điện tử";
+"Comics" = "Truyện tranh";
+
+/* Browser Menu Actions */
+"Share" = "Chia sẻ";
+"Reload" = "Tải lại";
+"Add to Favorites" = "Thêm vào Yêu thích";
+"Remove from Favorites" = "Xóa khỏi Yêu thích";
+"Hide" = "Ẩn";
+"Add Favorite" = "Thêm Yêu thích";
