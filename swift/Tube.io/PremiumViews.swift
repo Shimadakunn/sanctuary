@@ -82,6 +82,8 @@ struct PremiumBannerView: View {
 // MARK: - Premium Modal View
 struct PremiumModalView: View {
     @Environment(\.dismiss) private var dismiss
+    @StateObject private var storeManager = StoreKitManager.shared
+    @State private var showingError = false
 
     var body: some View {
         NavigationView {
@@ -159,15 +161,28 @@ struct PremiumModalView: View {
                         // Purchase button
                         VStack(spacing: 12) {
                             Button(action: {
-                                // TODO: Implement purchase logic
-                                print("Purchase premium tapped")
+                                Task {
+                                    do {
+                                        let transaction = try await storeManager.purchaseMonthlyPremium()
+                                        if transaction != nil {
+                                            dismiss()
+                                        }
+                                    } catch {
+                                        showingError = true
+                                    }
+                                }
                             }) {
                                 HStack {
-                                    Image(systemName: "crown.fill")
-                                        .font(.system(size: 18))
+                                    if storeManager.isLoading {
+                                        ProgressView()
+                                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                    } else {
+                                        Image(systemName: "crown.fill")
+                                            .font(.system(size: 18))
 
-                                    Text("Get Premium".localized)
-                                        .font(.system(size: 18, weight: .semibold))
+                                        Text("Get Premium - \(storeManager.monthlyPriceString)".localized)
+                                            .font(.system(size: 18, weight: .semibold))
+                                    }
                                 }
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
@@ -182,24 +197,31 @@ struct PremiumModalView: View {
                                 .cornerRadius(14)
                                 .shadow(color: Color.orange.opacity(0.3), radius: 12, x: 0, y: 4)
                             }
+                            .disabled(storeManager.isLoading)
 
                             // Terms and restore
                             HStack(spacing: 16) {
                                 Button(action: {
-                                    // TODO: Implement restore purchases
-                                    print("Restore purchases tapped")
+                                    Task {
+                                        await storeManager.restorePurchases()
+                                        if storeManager.hasActiveSubscription {
+                                            dismiss()
+                                        } else if storeManager.errorMessage != nil {
+                                            showingError = true
+                                        }
+                                    }
                                 }) {
                                     Text("Restore Purchases".localized)
                                         .font(.system(size: 13))
                                         .foregroundColor(.secondary)
                                 }
+                                .disabled(storeManager.isLoading)
 
                                 Text("•")
                                     .foregroundColor(.secondary)
 
                                 Button(action: {
-                                    // TODO: Open terms
-                                    print("Terms tapped")
+                                    openTermsURL()
                                 }) {
                                     Text("Terms".localized)
                                         .font(.system(size: 13))
@@ -213,6 +235,16 @@ struct PremiumModalView: View {
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
+            .alert("Error", isPresented: $showingError) {
+                Button("OK") {
+                    storeManager.clearError()
+                }
+            } message: {
+                Text(storeManager.errorMessage ?? "An error occurred")
+            }
+            .task {
+                await storeManager.loadProducts()
+            }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
@@ -225,6 +257,13 @@ struct PremiumModalView: View {
                     }
                 }
             }
+        }
+    }
+
+    private func openTermsURL() {
+        // Replace with your actual terms URL
+        if let url = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/") {
+            UIApplication.shared.open(url)
         }
     }
 }

@@ -36,6 +36,9 @@ enum SubscriptionStatus: String, CaseIterable {
 
 struct SubscriptionView: View {
     @AppStorage("subscriptionStatus") private var subscriptionStatusRaw: String = SubscriptionStatus.free.rawValue
+    @StateObject private var storeManager = StoreKitManager.shared
+    @StateObject private var trialManager = FreeTrialManager.shared
+    @State private var showingError = false
 
     private var subscriptionStatus: SubscriptionStatus {
         SubscriptionStatus(rawValue: subscriptionStatusRaw) ?? .free
@@ -84,6 +87,24 @@ struct SubscriptionView: View {
                         RoundedRectangle(cornerRadius: 20)
                             .fill(subscriptionStatus.badgeColor.opacity(0.15))
                     )
+
+                    // Trial days remaining (only for free trial users)
+                    if subscriptionStatus == .freeTrial && trialManager.isTrialActive {
+                        HStack(spacing: 6) {
+                            Image(systemName: "clock.fill")
+                                .font(.system(size: 14))
+                            Text("\(trialManager.daysRemaining) days remaining".localized)
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                        .foregroundColor(.blue.opacity(0.8))
+                        .padding(.top, 4)
+
+                        if let endDate = trialManager.formattedTrialEndDate {
+                            Text("Trial ends on \(endDate)".localized)
+                                .font(.system(size: 12))
+                                .foregroundColor(.secondary)
+                        }
+                    }
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 24)
@@ -94,6 +115,35 @@ struct SubscriptionView: View {
                 )
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
+
+                // Free trial info card (for free trial users)
+                if subscriptionStatus == .freeTrial && trialManager.isTrialActive {
+                    VStack(spacing: 12) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "gift.fill")
+                                .font(.system(size: 24))
+                                .foregroundColor(.blue)
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Enjoying your free trial!".localized)
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(.primary)
+
+                                Text("You have full access to all premium features.".localized)
+                                    .font(.system(size: 13))
+                                    .foregroundColor(.secondary)
+                            }
+
+                            Spacer()
+                        }
+                    }
+                    .padding(16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(Color.blue.opacity(0.1))
+                    )
+                    .padding(.horizontal, 20)
+                }
 
                 // Premium benefits section
                 if subscriptionStatus != .premium {
@@ -143,6 +193,18 @@ struct SubscriptionView: View {
                         Text("Thank you for your support".localized)
                             .font(.system(size: 14))
                             .foregroundColor(.secondary)
+
+                        // Renewal date
+                        if let renewalDate = storeManager.formattedRenewalDate {
+                            HStack(spacing: 6) {
+                                Image(systemName: "calendar")
+                                    .font(.system(size: 14))
+                                Text("Renews on \(renewalDate)".localized)
+                                    .font(.system(size: 14, weight: .medium))
+                            }
+                            .foregroundColor(.green.opacity(0.8))
+                            .padding(.top, 4)
+                        }
                     }
                     .padding(.vertical, 32)
                     .frame(maxWidth: .infinity)
@@ -160,15 +222,25 @@ struct SubscriptionView: View {
                 if subscriptionStatus != .premium {
                     VStack(spacing: 12) {
                         Button(action: {
-                            // TODO: Implement subscription logic
-                            print("Subscribe tapped")
+                            Task {
+                                do {
+                                    _ = try await storeManager.purchaseMonthlyPremium()
+                                } catch {
+                                    showingError = true
+                                }
+                            }
                         }) {
                             HStack {
-                                Image(systemName: "crown.fill")
-                                    .font(.system(size: 18))
+                                if storeManager.isLoading {
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                } else {
+                                    Image(systemName: "crown.fill")
+                                        .font(.system(size: 18))
 
-                                Text("Subscribe for $1.99/month".localized)
-                                    .font(.system(size: 18, weight: .semibold))
+                                    Text("Subscribe for \(storeManager.monthlyPriceString)".localized)
+                                        .font(.system(size: 18, weight: .semibold))
+                                }
                             }
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -183,24 +255,29 @@ struct SubscriptionView: View {
                             .cornerRadius(14)
                             .shadow(color: Color.orange.opacity(0.3), radius: 12, x: 0, y: 4)
                         }
+                        .disabled(storeManager.isLoading)
 
                         // Terms and restore
                         HStack(spacing: 16) {
                             Button(action: {
-                                // TODO: Implement restore purchases
-                                print("Restore purchases tapped")
+                                Task {
+                                    await storeManager.restorePurchases()
+                                    if storeManager.errorMessage != nil {
+                                        showingError = true
+                                    }
+                                }
                             }) {
                                 Text("Restore Purchases".localized)
                                     .font(.system(size: 13))
                                     .foregroundColor(.secondary)
                             }
+                            .disabled(storeManager.isLoading)
 
                             Text("•")
                                 .foregroundColor(.secondary)
 
                             Button(action: {
-                                // TODO: Open terms
-                                print("Terms tapped")
+                                openTermsURL()
                             }) {
                                 Text("Terms".localized)
                                     .font(.system(size: 13))
@@ -214,8 +291,9 @@ struct SubscriptionView: View {
                 // Manage subscription button for premium users
                 if subscriptionStatus == .premium {
                     Button(action: {
-                        // TODO: Open manage subscription
-                        print("Manage subscription tapped")
+                        Task {
+                            await storeManager.openSubscriptionManagement()
+                        }
                     }) {
                         Text("Manage Subscription".localized)
                             .font(.system(size: 16, weight: .semibold))
@@ -234,6 +312,25 @@ struct SubscriptionView: View {
         .background(Color.adaptiveGroupedBackground)
         .navigationTitle("Subscription".localized)
         .navigationBarTitleDisplayMode(.inline)
+        .alert("Error", isPresented: $showingError) {
+            Button("OK") {
+                storeManager.clearError()
+            }
+        } message: {
+            Text(storeManager.errorMessage ?? "An error occurred")
+        }
+        .task {
+            // Refresh products when view appears
+            await storeManager.loadProducts()
+            await storeManager.updatePurchasedProducts()
+        }
+    }
+
+    private func openTermsURL() {
+        // Replace with your actual terms URL
+        if let url = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/") {
+            UIApplication.shared.open(url)
+        }
     }
 }
 

@@ -46,6 +46,11 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         // Initialize AdBlockManager to start loading/caching filter lists
         _ = AdBlockManager.shared
 
+        // Initialize free trial for new users
+        Task { @MainActor in
+            FreeTrialManager.shared.checkAndActivateTrial()
+        }
+
         // Request App Tracking Transparency permission
         if #available(iOS 14.5, *) {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {

@@ -9,6 +9,7 @@ import WebKit
 
 struct SettingsView: View {
     @ObservedObject var favoritesManager: FavoritesManager
+    @StateObject private var trialManager = FreeTrialManager.shared
     @State private var showClearCacheAlert = false
     @State private var showClearCookiesAlert = false
     @State private var showClearAllDataAlert = false
@@ -272,6 +273,17 @@ struct SettingsView: View {
 
     private func getSubscriptionTitle() -> String {
         let status = SubscriptionStatus(rawValue: subscriptionStatusRaw) ?? .free
+
+        // Show days remaining for free trial
+        if status == .freeTrial && trialManager.isTrialActive {
+            let days = trialManager.daysRemaining
+            if days == 1 {
+                return "Trial (1 day left)".localized
+            } else {
+                return "Trial (\(days) days left)".localized
+            }
+        }
+
         return status.displayName
     }
 
